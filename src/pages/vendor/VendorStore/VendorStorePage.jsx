@@ -1,15 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { INITIAL_STORE_INFO } from '@/mock/vendor/vendorStore.mock';
 import StoreHeader from '@/components/vendor/store/StoreHeader';
 import StoreBannerUpload from '@/components/vendor/store/StoreBannerUpload';
 import StoreLogoUpload from '@/components/vendor/store/StoreLogoUpload';
 import StoreDetailsForm from '@/components/vendor/store/StoreDetailsForm';
 import StoreActionButtons from '@/components/vendor/store/StoreActionButtons';
+import { useAdminStoreProfile, useUpdateStoreProfile } from '@/hooks';
 import { toast } from '@/utils/toast';
 
 export const VendorStorePage = () => {
+  const { store, isLoading } = useAdminStoreProfile();
+  const { mutate: updateStore, isPending } = useUpdateStoreProfile();
   const [formData, setFormData] = useState(INITIAL_STORE_INFO);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (store) {
+      setFormData((prev) => ({
+        ...prev,
+        name: store.name || prev.name,
+        description: store.description || prev.description,
+        phone: store.phone || prev.phone,
+        email: store.email || prev.email,
+        address: store.address || prev.address,
+        isOpen: store.isOpen !== undefined ? store.isOpen : prev.isOpen,
+        banner: store.banner || prev.banner,
+        logo: store.logo || prev.logo,
+      }));
+    }
+  }, [store]);
 
   const handleFieldChange = (field, value) => {
     setFormData((prev) => ({
@@ -19,34 +37,41 @@ export const VendorStorePage = () => {
   };
 
   const handleCancel = () => {
-    setFormData(INITIAL_STORE_INFO);
+    if (store) {
+      setFormData((prev) => ({
+        ...prev,
+        name: store.name || prev.name,
+        description: store.description || prev.description,
+        phone: store.phone || prev.phone,
+        email: store.email || prev.email,
+        address: store.address || prev.address,
+        isOpen: store.isOpen !== undefined ? store.isOpen : prev.isOpen,
+      }));
+    } else {
+      setFormData(INITIAL_STORE_INFO);
+    }
     toast.info('Changes discarded');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       toast.error('Store name is required');
       return;
     }
-    if (!formData.description.trim()) {
-      toast.error('Store description is required');
-      return;
-    }
-    if (!formData.category) {
-      toast.error('Store category is required');
-      return;
-    }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success('Store information updated successfully!');
-    }, 400);
+    updateStore({
+      name: formData.name,
+      description: formData.description,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      isOpen: formData.isOpen,
+    });
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 w-full">
+    <div className={`space-y-4 sm:space-y-5 w-full transition-opacity ${isLoading ? 'opacity-80' : 'opacity-100'}`}>
       <StoreHeader />
 
       <form
@@ -70,7 +95,7 @@ export const VendorStorePage = () => {
 
         <StoreActionButtons
           onCancel={handleCancel}
-          isSubmitting={isSubmitting}
+          isSubmitting={isPending}
         />
       </form>
     </div>

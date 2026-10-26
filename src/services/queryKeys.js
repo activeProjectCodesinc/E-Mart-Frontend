@@ -1,11 +1,33 @@
-/**
- * Standardized Query Key Factory for TanStack Query Caching.
- * Using structured keys prevents cache collision and enables precise invalidation.
- */
 export const QUERY_KEYS = {
   AUTH: {
     USER: ['auth', 'user'],
     PROFILE: ['auth', 'profile'],
+  },
+  ADMIN: {
+    DASHBOARD: (params = {}) => ['admin', 'dashboard', params],
+    PRODUCTS: {
+      ALL: ['admin', 'products'],
+      LIST: (filters = {}) => ['admin', 'products', 'list', filters],
+      DETAIL: (id) => ['admin', 'products', 'detail', id],
+    },
+    ORDERS: {
+      ALL: ['admin', 'orders'],
+      LIST: (filters = {}) => ['admin', 'orders', 'list', filters],
+      DETAIL: (id) => ['admin', 'orders', 'detail', id],
+    },
+    INVENTORY: {
+      ALL: ['admin', 'inventory'],
+      LIST: (filters = {}) => ['admin', 'inventory', 'list', filters],
+      MOVEMENTS: (variantId) => ['admin', 'inventory', 'movements', variantId],
+    },
+    STORE: {
+      PROFILE: ['admin', 'store', 'management'],
+    },
+  },
+  CATEGORIES: {
+    ALL: ['categories'],
+    TREE: ['categories', 'tree'],
+    DETAIL: (id) => ['categories', 'detail', id],
   },
   PRODUCTS: {
     ALL: ['products'],
@@ -16,10 +38,6 @@ export const QUERY_KEYS = {
     ALL: ['orders'],
     LIST: (filters = {}) => ['orders', 'list', filters],
     DETAIL: (id) => ['orders', 'detail', id],
-  },
-  CATEGORIES: {
-    ALL: ['categories'],
-    DETAIL: (id) => ['categories', 'detail', id],
   },
   VENDORS: {
     ALL: ['vendors'],

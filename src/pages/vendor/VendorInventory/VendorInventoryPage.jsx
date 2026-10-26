@@ -8,36 +8,57 @@ import InventoryTable from '@/components/vendor/inventory/InventoryTable';
 import StockUpdateModal from '@/components/vendor/inventory/StockUpdateModal';
 import CsvValidationModal from '@/components/vendor/inventory/CsvValidationModal';
 import ProductsPagination from '@/components/vendor/products/ProductsPagination';
-import { toast } from '@/utils/toast';
+import { useAdminInventory, useAdjustStock } from '@/hooks';
 
 export const VendorInventoryPage = () => {
   const navigate = useNavigate();
   const { getRoute } = usePortalBase();
-  const [inventory, setInventory] = useState(INITIAL_INVENTORY);
   const [searchQuery, setSearchQuery] = useState('');
   const [stockFilter, setStockFilter] = useState('All Products');
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-
   const [activeStockProduct, setActiveStockProduct] = useState(null);
   const [activeCsvFile, setActiveCsvFile] = useState(null);
 
-  const filteredItems = useMemo(() => {
-    return inventory.filter((item) => {
-      if (stockFilter !== 'All Products' && item.status !== stockFilter) {
-        return false;
-      }
+  const apiFilters = useMemo(() => {
+    const f = { page: currentPage, pageSize: 20 };
+    if (stockFilter !== 'All Products') {
+      f.status = stockFilter.toLowerCase().replace(/\s+/g, '_');
+    }
+    if (searchQuery.trim()) f.q = searchQuery.trim();
+    return f;
+  }, [currentPage, stockFilter, searchQuery]);
 
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = item.name.toLowerCase().includes(q);
-        const matchesSku = item.sku.toLowerCase().includes(q);
-        if (!matchesName && !matchesSku) return false;
-      }
+  const { inventory: apiInventory, meta, isLoading } = useAdminInventory(apiFilters);
+  const { mutate: adjustStock } = useAdjustStock();
 
-      return true;
-    });
-  }, [inventory, stockFilter, searchQuery]);
+  const inventoryItems = useMemo(() => {
+    if (apiInventory && Array.isArray(apiInventory) && apiInventory.length > 0) {
+      return apiInventory.map((item) => {
+        const stockNum = Number(item.stock ?? 0);
+        const lowAlert = Number(item.lowStockAlert ?? 10);
+        const derivedStatus =
+          stockNum === 0 ? 'Out of Stock' : stockNum <= lowAlert ? 'Low Stock' : 'In Stock';
+
+        return {
+          id: item.id,
+          variantId: item.variantId || item.id,
+          name: item.name,
+          sku: item.sku || item.productCode || 'N/A',
+          unit: item.unit || '1 unit',
+          stock: stockNum,
+          lowStockAlert: lowAlert,
+          status: derivedStatus,
+          image: item.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+          category: typeof item.category === 'object' ? item.category?.name : (item.category || 'General'),
+        };
+      });
+    }
+    if (apiInventory && Array.isArray(apiInventory) && apiInventory.length === 0) {
+      return [];
+    }
+    return INITIAL_INVENTORY;
+  }, [apiInventory]);
 
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
@@ -46,75 +67,60 @@ export const VendorInventoryPage = () => {
   };
 
   const handleToggleSelectAll = () => {
-    if (selectedIds.length === filteredItems.length) {
+    if (selectedIds.length === inventoryItems.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredItems.map((i) => i.id));
+      setSelectedIds(inventoryItems.map((i) => i.id));
     }
   };
 
   const handleUpdateStock = ({ productId, change, notes }) => {
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id === productId) {
-          const newStock = Math.max(0, item.stock + change);
-          const newStatus =
-            newStock === 0
-              ? 'Out of Stock'
-              : newStock <= item.lowStockAlert
-              ? 'Low Stock'
-              : 'In Stock';
-          return {
-            ...item,
-            stock: newStock,
-            status: newStatus,
-            lastUpdated: 'Just now',
-          };
-        }
-        return item;
-      })
-    );
-
+    const target = inventoryItems.find((i) => i.id === productId);
+    adjustStock({
+      variantId: target?.variantId || productId,
+      change,
+      reason: change >= 0 ? 'restock' : 'damaged',
+      notes: notes || undefined,
+    });
     setActiveStockProduct(null);
-    toast.success(
-      `Inventory updated (${change >= 0 ? `+${change}` : change} units)${notes ? `: ${notes}` : ''}`
-    );
   };
 
   const handleOpenCsvValidation = (file) => {
     setActiveCsvFile(file || { name: 'inventory_stock_oct_01.csv' });
   };
 
-  const handleBackFromCsv = () => {
-    setActiveCsvFile(null);
-  };
-
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className={`space-y-4 sm:space-y-5 transition-opacity ${isLoading ? 'opacity-80' : 'opacity-100'}`}>
       <InventoryHeader />
 
       <InventoryFilterBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          setCurrentPage(1);
+        }}
         stockFilter={stockFilter}
-        onStockFilterChange={setStockFilter}
+        onStockFilterChange={(s) => {
+          setStockFilter(s);
+          setCurrentPage(1);
+        }}
         onOpenCsvModal={() => handleOpenCsvValidation(null)}
       />
 
       <InventoryTable
-        items={filteredItems}
+        items={inventoryItems}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
         onAddStock={(prod) => setActiveStockProduct(prod)}
-        onEditProduct={(prod) => navigate(getRoute(`/products/edit/${prod.id.replace('INV-', 'PRD-')}`))}
+        onEditProduct={(prod) => navigate(getRoute(`/products/edit/${prod.id}`))}
       />
 
       <ProductsPagination
         currentPage={currentPage}
-        totalPages={4}
-        totalItems={124}
-        itemsPerPage={8}
+        totalPages={meta?.pageSize ? Math.ceil((meta.total || 1) / meta.pageSize) : 1}
+        totalItems={meta?.total ?? inventoryItems.length}
+        itemsPerPage={meta?.pageSize || 20}
         onPageChange={setCurrentPage}
       />
 
@@ -130,7 +136,7 @@ export const VendorInventoryPage = () => {
         isOpen={Boolean(activeCsvFile)}
         file={activeCsvFile}
         onClose={() => setActiveCsvFile(null)}
-        onBack={handleBackFromCsv}
+        onBack={() => setActiveCsvFile(null)}
       />
     </div>
   );

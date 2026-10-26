@@ -38,7 +38,14 @@ export const VendorRecentOrders = ({ orders = [] }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {orders.map((order) => {
+            {orders.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                  No recent orders found
+                </td>
+              </tr>
+            ) : (
+              orders.map((order) => {
               const badgeStyle = STATUS_STYLES[order.statusType] || STATUS_STYLES.warning;
               const cleanId = order.id.replace('#', '');
 
@@ -70,7 +77,8 @@ export const VendorRecentOrders = ({ orders = [] }) => {
                   </td>
                 </tr>
               );
-            })}
+            })
+          )}
           </tbody>
         </table>
       </div>

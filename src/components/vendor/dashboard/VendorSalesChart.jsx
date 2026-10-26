@@ -32,7 +32,7 @@ export const VendorSalesChart = ({ data = [] }) => {
                   animate={{ opacity: 1, y: 0 }}
                   className="absolute -top-7 px-1.5 py-0.5 rounded-md bg-slate-900 text-white text-[9px] sm:text-[10px] font-bold shadow-md pointer-events-none z-10 whitespace-nowrap"
                 >
-                  ${item.value * 20}
+                  {item.revenue ? `PKR ${Number(item.revenue).toLocaleString()}` : `${item.value} orders`}
                 </motion.div>
               )}
 

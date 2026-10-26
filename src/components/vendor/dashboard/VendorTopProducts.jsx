@@ -8,7 +8,12 @@ export const VendorTopProducts = ({ products = [] }) => {
       </div>
 
       <div className="space-y-2 sm:space-y-3">
-        {products.map((item) => (
+        {products.length === 0 ? (
+          <div className="py-6 text-center text-slate-400 text-xs font-medium">
+            No top selling products yet
+          </div>
+        ) : (
+          products.map((item) => (
           <div
             key={item.id}
             className="flex items-center justify-between p-1.5 sm:p-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
@@ -29,7 +34,8 @@ export const VendorTopProducts = ({ products = [] }) => {
 
             <span className="text-xs font-semibold text-slate-900 shrink-0">{item.price}</span>
           </div>
-        ))}
+        ))
+      )}
       </div>
     </div>
   );

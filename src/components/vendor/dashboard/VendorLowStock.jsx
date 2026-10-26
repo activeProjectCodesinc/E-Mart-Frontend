@@ -19,7 +19,12 @@ export const VendorLowStock = ({ products = [] }) => {
       </div>
 
       <div className="space-y-2 sm:space-y-3">
-        {products.map((item) => {
+        {products.length === 0 ? (
+          <div className="py-6 text-center text-emerald-600/80 text-xs font-medium">
+            ✓ All products are well-stocked
+          </div>
+        ) : (
+          products.map((item) => {
           const isOut = item.status === 'Out of Stock';
 
           return (
@@ -52,7 +57,8 @@ export const VendorLowStock = ({ products = [] }) => {
               </span>
             </div>
           );
-        })}
+        })
+      )}
       </div>
     </div>
   );

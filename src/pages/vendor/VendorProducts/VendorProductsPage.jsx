@@ -6,13 +6,12 @@ import ProductsFilterBar from '@/components/vendor/products/ProductsFilterBar';
 import ProductsTable from '@/components/vendor/products/ProductsTable';
 import ProductsPagination from '@/components/vendor/products/ProductsPagination';
 import UpdateProductStatusModal from '@/components/vendor/products/UpdateProductStatusModal';
-import { toast } from '@/utils/toast';
+import { useAdminProducts, useUpdateProductStatus, useDeleteProduct } from '@/hooks';
 import { usePortalBase } from '@/utils/usePortalBase';
 
 export const VendorProductsPage = () => {
   const navigate = useNavigate();
   const { getRoute } = usePortalBase();
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -20,39 +19,49 @@ export const VendorProductsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusModal, setStatusModal] = useState({ isOpen: false, product: null });
 
+  const apiFilters = useMemo(() => {
+    const f = { page: currentPage, pageSize: 20 };
+    if (activeTab !== 'all') f.status = activeTab.replace('-', '_');
+    if (searchQuery.trim()) f.q = searchQuery.trim();
+    return f;
+  }, [currentPage, activeTab, searchQuery]);
+
+  const { products: apiProducts, meta, counts: apiCounts, isLoading } = useAdminProducts(apiFilters);
+  const { mutate: updateStatus } = useUpdateProductStatus();
+  const { mutate: deleteProduct } = useDeleteProduct();
+
+  const productsList = useMemo(() => {
+    if (apiProducts && Array.isArray(apiProducts)) {
+      return apiProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: typeof p.category === 'object' ? p.category?.name : (p.category || 'General'),
+        price: Number(p.price || 0),
+        stock: p.stock ?? 0,
+        status: p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).replace('_', ' ') : 'Active',
+        image: p.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+        productCode: p.productCode,
+        sku: p.sku,
+      }));
+    }
+    return INITIAL_PRODUCTS;
+  }, [apiProducts]);
+
   const counts = useMemo(
     () => ({
-      all: 130,
-      active: 98,
-      inactive: 12,
-      lowStock: 6,
-      outOfStock: 4,
+      all: apiCounts?.all ?? 130,
+      active: apiCounts?.active ?? 98,
+      inactive: apiCounts?.inactive ?? 12,
+      lowStock: apiCounts?.lowStock ?? 6,
+      outOfStock: apiCounts?.outOfStock ?? 4,
     }),
-    []
+    [apiCounts]
   );
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      if (activeTab === 'active' && product.status !== 'Active') return false;
-      if (activeTab === 'inactive' && product.status !== 'Inactive') return false;
-      if (activeTab === 'low-stock' && product.status !== 'Low Stock') return false;
-      if (activeTab === 'out-of-stock' && product.status !== 'Out of Stock') return false;
-
-      if (selectedCategory !== 'All Categories' && product.category !== selectedCategory) {
-        return false;
-      }
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = product.name.toLowerCase().includes(q);
-        const matchesId = product.id.toLowerCase().includes(q);
-        const matchesCategory = product.category.toLowerCase().includes(q);
-        if (!matchesName && !matchesId && !matchesCategory) return false;
-      }
-
-      return true;
-    });
-  }, [products, activeTab, selectedCategory, searchQuery]);
+    if (selectedCategory === 'All Categories') return productsList;
+    return productsList.filter((p) => p.category === selectedCategory);
+  }, [productsList, selectedCategory]);
 
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
@@ -73,13 +82,12 @@ export const VendorProductsPage = () => {
   };
 
   const handleConfirmStatusUpdate = ({ productId, newStatus, reason }) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p))
-    );
+    updateStatus({
+      id: productId,
+      status: newStatus.toLowerCase().replace(' ', '_'),
+      reason,
+    });
     setStatusModal({ isOpen: false, product: null });
-    toast.success(
-      `Product status updated to "${newStatus}"${reason ? ` (${reason})` : ''}`
-    );
   };
 
   const handleEditProduct = (product) => {
@@ -87,12 +95,11 @@ export const VendorProductsPage = () => {
   };
 
   const handleDeleteProduct = (productId) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    toast.info('Product removed successfully');
+    deleteProduct(productId);
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className={`space-y-4 sm:space-y-5 transition-opacity ${isLoading ? 'opacity-80' : 'opacity-100'}`}>
       <ProductsHeader
         activeTab={activeTab}
         onTabChange={(tab) => {
@@ -114,8 +121,8 @@ export const VendorProductsPage = () => {
           setSelectedCategory(c);
           setCurrentPage(1);
         }}
-        onExport={() => toast.success('Exporting product catalog as CSV...')}
-        onImport={() => toast.info('Import product inventory triggered')}
+        onExport={() => window.open('/api/v1/admin/products/export', '_blank')}
+        onImport={() => navigate(getRoute('/inventory'))}
       />
 
       <ProductsTable
@@ -130,9 +137,9 @@ export const VendorProductsPage = () => {
 
       <ProductsPagination
         currentPage={currentPage}
-        totalPages={5}
-        totalItems={130}
-        itemsPerPage={8}
+        totalPages={meta?.pageSize ? Math.ceil((meta.total || 1) / meta.pageSize) : 1}
+        totalItems={meta?.total ?? filteredProducts.length}
+        itemsPerPage={meta?.pageSize || 20}
         onPageChange={setCurrentPage}
       />
 

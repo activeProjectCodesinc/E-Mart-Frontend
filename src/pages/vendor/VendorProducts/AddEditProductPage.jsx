@@ -1,20 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeftIcon } from '@/icons';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { usePortalBase } from '@/utils/usePortalBase';
-import { INITIAL_PRODUCTS } from '@/mock/vendor/vendorProducts.mock';
 import ProductStepIndicator from '@/components/vendor/products/form/ProductStepIndicator';
 import ProductBasicInfoStep from '@/components/vendor/products/form/ProductBasicInfoStep';
 import ProductPricingInventoryStep from '@/components/vendor/products/form/ProductPricingInventoryStep';
 import ProductImagesPublishStep from '@/components/vendor/products/form/ProductImagesPublishStep';
 import UploadSuccessModal from '@/components/vendor/products/form/UploadSuccessModal';
 import UploadErrorModal from '@/components/vendor/products/form/UploadErrorModal';
+import { useCreateProduct, useUpdateProduct, useAdminProductDetail, useCategories } from '@/hooks';
 
 const DEFAULT_BLANK_PRODUCT = {
   name: '',
   sku: '',
-  barcode: '',
   unit: '1kg',
   category: 'Fruits & Vegetables',
   brand: '',
@@ -22,22 +21,14 @@ const DEFAULT_BLANK_PRODUCT = {
   detailedDescription: '',
   price: '',
   hasDiscount: false,
-  discountType: 'Percentage',
-  discountValue: '',
-  discountStartDate: '',
-  discountEndDate: '',
   stock: '',
   lowStockAlert: '10',
   stockStatus: 'Active',
   allowPurchase: true,
-  variants: [],
-  variantTab: 'Weight',
   images: [],
   tags: ['fresh', 'organic'],
   countryOfOrigin: 'Pakistan',
-  storageInstructions: '',
   status: 'Active',
-  isFeatured: false,
 };
 
 export const AddEditProductPage = () => {
@@ -51,20 +42,32 @@ export const AddEditProductPage = () => {
   const [missingFields, setMissingFields] = useState([]);
 
   const isEditing = Boolean(id);
-  const existingProduct = useMemo(() => {
-    return isEditing ? INITIAL_PRODUCTS.find((p) => p.id === id) : null;
-  }, [id, isEditing]);
+  const { product: apiProduct } = useAdminProductDetail(id);
+  const { categories } = useCategories();
+  const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
+  const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
+  const [formData, setFormData] = useState(DEFAULT_BLANK_PRODUCT);
 
-  const [formData, setFormData] = useState(() => {
-    if (existingProduct) {
-      return {
+  useEffect(() => {
+    if (apiProduct) {
+      setFormData({
         ...DEFAULT_BLANK_PRODUCT,
-        ...existingProduct,
-        images: existingProduct.image ? [existingProduct.image] : [],
-      };
+        name: apiProduct.name || '',
+        sku: apiProduct.sku || apiProduct.productCode || '',
+        unit: apiProduct.unit || '1kg',
+        category: apiProduct.category?.name || apiProduct.category || 'Fruits & Vegetables',
+        categoryId: apiProduct.category?.id || apiProduct.categoryId,
+        brand: typeof apiProduct.brand === 'object' ? apiProduct.brand?.name : (apiProduct.brand || ''),
+        shortDescription: apiProduct.shortDescription || '',
+        detailedDescription: apiProduct.description || '',
+        price: apiProduct.price || '',
+        stock: apiProduct.stock ?? '',
+        lowStockAlert: String(apiProduct.lowStockAlert ?? '10'),
+        images: apiProduct.imageUrl ? [apiProduct.imageUrl] : (apiProduct.images || []),
+        status: apiProduct.status || 'Active',
+      });
     }
-    return DEFAULT_BLANK_PRODUCT;
-  });
+  }, [apiProduct]);
 
   const handleFieldChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -78,8 +81,6 @@ export const AddEditProductPage = () => {
     if (!formData.shortDescription?.trim()) missing.push('Short Description');
     if (!formData.price || Number(formData.price) <= 0) missing.push('Selling Price');
     if (formData.stock === '' || formData.stock === undefined) missing.push('Stock Quantity');
-    if (formData.lowStockAlert === '' || formData.lowStockAlert === undefined) missing.push('Low Stock Alert');
-    if (!formData.images || formData.images.length === 0) missing.push('At least one Product Image');
     return missing;
   };
 
@@ -90,17 +91,33 @@ export const AddEditProductPage = () => {
       setShowErrorModal(true);
       return;
     }
-    setShowSuccessModal(true);
-  };
 
-  const handleFixErrors = () => {
-    setShowErrorModal(false);
-    if (!formData.name?.trim() || !formData.unit?.trim() || !formData.shortDescription?.trim()) {
-      setStep(1);
-    } else if (!formData.price || formData.stock === '') {
-      setStep(2);
+    const matchedCat = categories.find(
+      (c) => c.name === formData.category || c.id === formData.categoryId
+    );
+    const categoryId = matchedCat?.id || categories[0]?.id || '01a1780d-1826-726b-88ba-61457d272fe2';
+
+    const payload = {
+      name: formData.name,
+      unit: formData.unit,
+      categoryId,
+      brand: formData.brand || undefined,
+      shortDescription: formData.shortDescription,
+      description: formData.detailedDescription || undefined,
+      price: Number(formData.price),
+      stock: Number(formData.stock),
+      lowStockAlert: Number(formData.lowStockAlert || 10),
+      stockStatus: Number(formData.stock) > 0 ? 'in_stock' : 'out_of_stock',
+      allowPurchase: formData.allowPurchase ?? true,
+      origin: formData.countryOfOrigin || 'Pakistan',
+      tags: formData.tags || ['fresh'],
+    };
+
+    const options = { onSuccess: () => setShowSuccessModal(true) };
+    if (isEditing) {
+      updateProduct({ id, ...payload }, options);
     } else {
-      setStep(3);
+      createProduct(payload, options);
     }
   };
 
@@ -118,7 +135,7 @@ export const AddEditProductPage = () => {
         </Link>
 
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
-          {isEditing ? `Edit Product: ${existingProduct?.name || ''}` : 'Add New Product'}
+          {isEditing ? `Edit Product: ${formData.name || ''}` : 'Add New Product'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
           {isEditing ? 'Modify pricing, inventory, and product details.' : 'Fill in the basic information about your product'}
@@ -152,6 +169,7 @@ export const AddEditProductPage = () => {
           onChange={handleFieldChange}
           onPublish={handlePublish}
           onBack={() => setStep(2)}
+          isSubmitting={isCreating || isUpdating}
         />
       )}
 
@@ -173,7 +191,7 @@ export const AddEditProductPage = () => {
         isOpen={showErrorModal}
         missingFields={missingFields}
         onClose={() => setShowErrorModal(false)}
-        onFixErrors={handleFixErrors}
+        onFixErrors={() => setShowErrorModal(false)}
       />
     </div>
   );

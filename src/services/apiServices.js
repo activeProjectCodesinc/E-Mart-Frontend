@@ -5,13 +5,17 @@ import baseURL from './apiBaseURL';
 const axiosInstance = axios.create({
   baseURL,
   timeout: 30000,
+  headers: {
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
-// Request interceptor: automatically attach Authorization header if token exists
 axiosInstance.interceptors.request.use(
   (config) => {
     const token =
       config.headers?.Authorization ||
+      localStorage.getItem('admin_access_token') ||
+      localStorage.getItem('accessToken') ||
       localStorage.getItem('token') ||
       localStorage.getItem('authToken');
 
@@ -20,13 +24,9 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor: logs errors for debugging
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -40,44 +40,38 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Helper function to handle API error notifications
 const handleApiError = (error) => {
   const errorMessage =
+    error.response?.data?.error?.message ||
     error.response?.data?.message ||
     error.response?.data?.Message ||
     error.response?.data?.detail ||
-    error.response?.statusText ||
     error.message ||
     'Something went wrong';
 
-  // Do not show toasts for auth checks unless desired
   if (error.response?.status !== 401 && error.response?.status !== 403) {
     toast.error(errorMessage);
   }
 
   const apiError = new Error(errorMessage);
   apiError.response = error.response;
-  apiError.request = error.request;
   apiError.status = error.response?.status;
+  apiError.data = error.response?.data;
   throw apiError;
 };
 
-// Generic API service function
 export const apiService = async (
   url,
   method = 'GET',
   body = null,
   token = null,
-  isMultipart = false
+  isMultipart = false,
+  params = null
 ) => {
   try {
     const headers = {};
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const isFormData = body instanceof FormData;
-    if (!isMultipart && !isFormData && body) {
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (!isMultipart && !(body instanceof FormData) && body) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -86,6 +80,7 @@ export const apiService = async (
       method,
       data: body,
       headers,
+      params,
     });
 
     return response.data;
@@ -94,10 +89,8 @@ export const apiService = async (
   }
 };
 
-/**
- * Standard CRUD Operations
- */
-export const get = (url, token = null) => apiService(url, 'GET', null, token);
+export const get = (url, params = null, token = null) =>
+  apiService(url, 'GET', null, token, false, params);
 
 export const post = (url, body, token = null, isMultipart = false) =>
   apiService(url, 'POST', body, token, isMultipart);
@@ -111,9 +104,6 @@ export const patch = (url, body, token = null, isMultipart = false) =>
 export const del = (url, token = null) => apiService(url, 'DELETE', null, token);
 export const deleteRequest = del;
 
-/**
- * Multipart Form Data Operations
- */
 export const uploadFile = (url, formData, token = null) => {
   if (!(formData instanceof FormData)) {
     throw new Error('uploadFile requires a FormData object');
@@ -131,16 +121,12 @@ export const updateWithMultipart = (url, formData, token = null) => {
   return apiService(url, 'PUT', formData, token, true);
 };
 
-/**
- * Form Data Utilities
- */
 export const createFormData = (data) => {
   const formData = new FormData();
   if (!data) return formData;
 
   Object.entries(data).forEach(([key, value]) => {
     if (value === null || value === undefined) return;
-
     if (Array.isArray(value)) {
       value.forEach((item, index) => {
         if (item instanceof File || item instanceof Blob) {
@@ -161,22 +147,10 @@ export const createFormData = (data) => {
   return formData;
 };
 
-export const logFormData = (formData) => {
-  if (!(formData instanceof FormData)) return;
-  console.log('📋 FormData contents:');
-  for (const [key, val] of formData.entries()) {
-    console.log(`${key}:`, val instanceof File ? `File(${val.name}, ${val.size} bytes)` : val);
-  }
-};
-
 export const apiConfig = {
   defaultTimeout: 30000,
   uploadTimeout: 120000,
   baseURL,
-  headers: {
-    json: { 'Content-Type': 'application/json' },
-    multipart: {},
-  },
 };
 
 export const apiServices = {
@@ -191,7 +165,6 @@ export const apiServices = {
   createWithMultipart,
   updateWithMultipart,
   createFormData,
-  logFormData,
   apiService,
   apiConfig,
 };

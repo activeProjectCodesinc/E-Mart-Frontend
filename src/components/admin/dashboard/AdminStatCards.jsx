@@ -56,7 +56,7 @@ const StatCardItem = ({ card }) => {
   );
 };
 
-export const AdminStatCards = () => {
+export const AdminStatCards = ({ stats = ADMIN_STAT_CARDS }) => {
   return (
     <motion.div
       variants={staggerContainer(0.08, 0.1)}
@@ -64,7 +64,7 @@ export const AdminStatCards = () => {
       animate="visible"
       className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
     >
-      {ADMIN_STAT_CARDS.map((card) => (
+      {stats.map((card) => (
         <StatCardItem key={card.id} card={card} />
       ))}
     </motion.div>

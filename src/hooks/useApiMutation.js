@@ -1,23 +1,34 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from '@/utils/toast';
 
-/**
- * Reusable hook for POST, PUT, PATCH, DELETE mutations with cache invalidation.
- *
- * @param {Function} mutationFn - Async mutation function (e.g. (data) => post('/api/item', data))
- * @param {Object} options - Options including invalidateKey, successMessage, onSuccess, onError
- */
 export const useApiMutation = (mutationFn, options = {}) => {
   const queryClient = useQueryClient();
-  const { invalidateKey, successMessage, onSuccess, onError, ...rest } = options;
+  const {
+    invalidateKey,
+    invalidateKeys,
+    successMessage,
+    onSuccess,
+    onError,
+    ...rest
+  } = options;
 
   return useMutation({
     mutationFn,
     onSuccess: (data, variables, context) => {
-      // Invalidate relevant cache so TanStack Query auto-refetches fresh data
-      if (invalidateKey) {
-        queryClient.invalidateQueries({ queryKey: invalidateKey });
+      const keys = [];
+      if (invalidateKeys && Array.isArray(invalidateKeys)) {
+        keys.push(...invalidateKeys);
+      } else if (invalidateKey) {
+        if (Array.isArray(invalidateKey) && Array.isArray(invalidateKey[0])) {
+          keys.push(...invalidateKey);
+        } else {
+          keys.push(invalidateKey);
+        }
       }
+
+      keys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key });
+      });
 
       if (successMessage) {
         toast.success(

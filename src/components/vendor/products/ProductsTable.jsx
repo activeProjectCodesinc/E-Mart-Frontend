@@ -64,7 +64,7 @@ export const ProductsTable = ({
                     <td className="py-3.5 px-3 sm:px-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.image}
+                          src={product.image || product.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100'}
                           alt={product.name}
                           className="w-10 h-10 rounded-xl object-cover bg-slate-100 border border-slate-200/80 shrink-0"
                         />
@@ -75,11 +75,11 @@ export const ProductsTable = ({
                     </td>
 
                     <td className="py-3.5 px-3 sm:px-4 text-slate-500 font-medium">
-                      {product.category}
+                      {typeof product.category === 'object' ? product.category?.name : (product.category || 'General')}
                     </td>
 
                     <td className="py-3.5 px-3 sm:px-4 font-bold text-slate-900">
-                      ${product.price.toFixed(2)}
+                      PKR {Number(product.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
 
                     <td className="py-3.5 px-3 sm:px-4">

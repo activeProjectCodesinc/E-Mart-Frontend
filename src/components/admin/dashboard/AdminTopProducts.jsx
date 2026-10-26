@@ -1,10 +1,24 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { TrendingUpIcon } from '@/icons';
 import { TOP_PRODUCTS } from '@/mock/admin/adminDashboard.mock';
 import { slideUp } from '@/animation/animations';
 
-export const AdminTopProducts = () => {
+export const AdminTopProducts = ({ products }) => {
+  const displayProducts = useMemo(() => {
+    if (products && Array.isArray(products)) {
+      return products.map((p, idx) => ({
+        id: p.productId || `tp-${idx}`,
+        name: p.name,
+        category: p.category || 'General',
+        sold: `${Number(p.sales || 0).toLocaleString()} sold`,
+        trend: '+12%',
+        image: p.imageUrl || TOP_PRODUCTS[idx % TOP_PRODUCTS.length]?.image || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+      }));
+    }
+    return TOP_PRODUCTS;
+  }, [products]);
   return (
     <motion.div
       variants={slideUp}
@@ -25,7 +39,12 @@ export const AdminTopProducts = () => {
       </div>
 
       <div className="space-y-3.5 divide-y divide-slate-100">
-        {TOP_PRODUCTS.map((product) => (
+        {displayProducts.length === 0 ? (
+          <div className="py-6 text-center text-slate-400 text-xs font-medium">
+            No top selling products yet
+          </div>
+        ) : (
+          displayProducts.map((product) => (
           <div
             key={product.id}
             className="pt-3.5 first:pt-0 flex items-center justify-between gap-3 group cursor-pointer"
@@ -56,7 +75,8 @@ export const AdminTopProducts = () => {
               </span>
             </div>
           </div>
-        ))}
+        ))
+      )}
       </div>
     </motion.div>
   );

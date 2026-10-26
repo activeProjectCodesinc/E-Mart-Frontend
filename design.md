@@ -80,6 +80,15 @@ This document defines the production-grade frontend architecture, multi-portal s
   - `useApiQuery(queryKey, url, options)` in `src/hooks/useApiQuery.js`
   - `useApiMutation(mutationFn, options)` in `src/hooks/useApiMutation.js` (with automatic `invalidateKey` triggering and toast notification).
 
+### 1.9 Zero-Refresh & Instant UI Reflection Standard (Admin & Vendor Actions)
+- **Strict Rule:** `window.location.reload()`, hard browser reloads, and manual refresh prompts are **strictly prohibited**.
+- **Instant Reflection Requirement:**
+  - Whenever an Admin or Vendor updates, creates, or deletes data (e.g. approving/rejecting vendors, toggling product status, editing commission rates, updating profile/store info), the UI must update **immediately and seamlessly** without any page reload.
+  - **Enforcement Mechanisms:**
+    1. **Automated Query Invalidation:** Trigger `invalidateKey` in `useApiMutation` so TanStack Query immediately re-syncs active view queries with zero downtime or flicker.
+    2. **Optimistic UI Updates:** For high-frequency admin actions (status toggles, approvals), mutate local cache via `queryClient.setQueryData()` or `onMutate` for instant 0ms visual feedback.
+    3. **State Synchronization:** Keep Redux / local state aligned with server mutations immediately upon resolution.
+
 ---
 
 ## 2. Multi-Portal System Design Architecture
@@ -525,3 +534,91 @@ Always register new query keys in `src/services/queryKeys.js`. Follow this stand
 | **Sub-Resource** | `[domain, id, subresource]` | `['orders', 'ord-456', 'timeline']` |
 
 When invalidating, calling `queryClient.invalidateQueries({ queryKey: ['products'] })` automatically invalidates all lists, details, and filtered variations under `products`!
+
+---
+
+### 6.6 Instant Reflection & Zero-Refresh Standard (Admin Data Modifications)
+
+To guarantee that Admin and Vendor dashboards update immediately without requiring a browser refresh:
+
+#### 1. Core Rule: Zero Page Reloads
+- Never call `window.location.reload()`, navigate to the same URL to force a reload, or prompt the user with "Please refresh the page to see changes".
+- All mutations must reflect in the DOM within `< 100ms`.
+
+#### 2. Pattern A: Immediate Query Invalidation (Standard CRUD)
+Use `useApiMutation` with `invalidateKey`. As soon as the API responds with success, TanStack Query invalidates the cached query and automatically pulls the latest dataset into the UI without full-page re-rendering:
+
+```jsx
+import { useApiMutation } from '@/hooks/useApiMutation';
+import { patch } from '@/services/apiServices';
+import { QUERY_KEYS } from '@/services/queryKeys';
+
+export const AdminVendorApprovalButton = ({ vendorId }) => {
+  const { mutate: approveVendor, isPending } = useApiMutation(
+    () => patch(`/admin/vendors/${vendorId}/approve`),
+    {
+      // Automatically refetches vendor list and single vendor queries instantly!
+      invalidateKey: QUERY_KEYS.VENDORS.ALL,
+      successMessage: 'Vendor approved successfully!',
+    }
+  );
+
+  return (
+    <button onClick={() => approveVendor()} disabled={isPending}>
+      {isPending ? 'Approving...' : 'Approve Vendor'}
+    </button>
+  );
+};
+```
+
+#### 3. Pattern B: Optimistic UI Updates (0ms Instant Status Toggles)
+For interactive toggles (e.g., changing vendor status between `Active` and `Suspended`, toggling product visibility), update the UI cache **before** the network request resolves:
+
+```jsx
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { patch } from '@/services/apiServices';
+import { QUERY_KEYS } from '@/services/queryKeys';
+import toast from '@/utils/toast';
+
+export const useOptimisticVendorStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ vendorId, status }) => patch(`/admin/vendors/${vendorId}/status`, { status }),
+    onMutate: async ({ vendorId, status }) => {
+      // 1. Cancel ongoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.VENDORS.ALL });
+
+      // 2. Snapshot current state for rollback on error
+      const previousVendors = queryClient.getQueryData(QUERY_KEYS.VENDORS.ALL);
+
+      // 3. Optimistically update TanStack cache immediately (0ms UI latency)
+      queryClient.setQueryData(QUERY_KEYS.VENDORS.ALL, (old = []) =>
+        old.map((v) => (v.id === vendorId ? { ...v, status } : v))
+      );
+
+      return { previousVendors };
+    },
+    onError: (err, variables, context) => {
+      // 4. Roll back to previous snapshot if server rejects change
+      if (context?.previousVendors) {
+        queryClient.setQueryData(QUERY_KEYS.VENDORS.ALL, context.previousVendors);
+      }
+      toast.error('Failed to update status. Reverted changes.');
+    },
+    onSettled: () => {
+      // 5. Always refetch in background to guarantee final server consistency
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.VENDORS.ALL });
+    },
+  });
+};
+```
+
+#### 4. Summary Table: Invalidation vs Optimistic Updates
+
+| Scenario | Recommended Strategy | Latency | Fallback |
+| :--- | :--- | :--- | :--- |
+| **New Item Creation (Modal/Form)** | `invalidateKey` via `useApiMutation` | ~150-300ms | Modal remains open on error |
+| **Status Toggle / Approval Button** | Optimistic Update (`onMutate`) | **0ms (Instant)** | Auto rollback via `onError` |
+| **Delete / Remove Item** | Optimistic Update or `invalidateKey` | Instant / ~200ms | Item restored on error |
+| **Settings / Profile Update** | `invalidateKey` via `useApiMutation` | ~200ms | Field highlights on error |

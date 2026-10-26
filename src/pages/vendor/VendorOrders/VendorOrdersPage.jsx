@@ -5,73 +5,72 @@ import OrdersFilterBar from '@/components/vendor/orders/OrdersFilterBar';
 import OrdersTable from '@/components/vendor/orders/OrdersTable';
 import AcceptOrderModal from '@/components/vendor/orders/AcceptOrderModal';
 import RejectOrderModal from '@/components/vendor/orders/RejectOrderModal';
-import { toast } from '@/utils/toast';
+import { useAdminOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
 
 export const VendorOrdersPage = () => {
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState('Date Range');
   const [acceptModal, setAcceptModal] = useState({ isOpen: false, order: null });
   const [rejectModal, setRejectModal] = useState({ isOpen: false, order: null });
 
+  const apiFilters = useMemo(() => {
+    const f = { page: 1, pageSize: 20 };
+    if (activeTab !== 'all') f.tab = activeTab;
+    if (searchQuery.trim()) f.q = searchQuery.trim();
+    return f;
+  }, [activeTab, searchQuery]);
+
+  const { orders: apiOrders, counts: apiCounts, isLoading } = useAdminOrders(apiFilters);
+  const { mutate: updateOrderStatus } = useUpdateOrderStatus();
+  const { mutate: cancelOrder } = useCancelOrder();
+
+  const ordersList = useMemo(() => {
+    if (apiOrders && Array.isArray(apiOrders)) {
+      return apiOrders.map((o) => ({
+        id: o.orderNumber || o.id,
+        cleanId: o.id,
+        customer: typeof o.customer === 'object' ? o.customer.fullName : (o.customer || 'Customer'),
+        phone: typeof o.customer === 'object' ? o.customer.phone : '',
+        itemsCount: o.itemsCount || 1,
+        total: String(o.total).startsWith('PKR') ? o.total : `PKR ${o.total}`,
+        status: o.status === 'new' ? 'New Order' : o.status ? o.status.charAt(0).toUpperCase() + o.status.slice(1).replace('_', ' ') : 'New Order',
+        placedAt: o.placedAt ? new Date(o.placedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Today',
+      }));
+    }
+    return INITIAL_ORDERS;
+  }, [apiOrders]);
+
   const counts = useMemo(
     () => ({
-      all: orders.length,
-      new: orders.filter((o) => o.status === 'New Order').length,
-      completed: orders.filter((o) => o.status === 'Completed').length,
-      cancelled: orders.filter((o) => o.status === 'Cancelled').length,
+      all: apiCounts?.all ?? ordersList.length,
+      new: apiCounts?.new ?? ordersList.filter((o) => o.status === 'New Order').length,
+      completed: apiCounts?.completed ?? ordersList.filter((o) => o.status === 'Completed').length,
+      cancelled: apiCounts?.cancelled ?? ordersList.filter((o) => o.status === 'Cancelled').length,
     }),
-    [orders]
+    [apiCounts, ordersList]
   );
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      if (activeTab === 'new' && order.status !== 'New Order') return false;
-      if (activeTab === 'completed' && order.status !== 'Completed') return false;
-      if (activeTab === 'cancelled' && order.status !== 'Cancelled') return false;
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesId = order.id.toLowerCase().includes(q);
-        const matchesCustomer = order.customer.toLowerCase().includes(q);
-        const matchesPhone = order.phone?.includes(q);
-        if (!matchesId && !matchesCustomer && !matchesPhone) return false;
-      }
-      return true;
-    });
-  }, [orders, activeTab, searchQuery]);
-
   const handleConfirmAccept = ({ orderId, prepTime }) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { ...o, status: 'Processing', prepTime: prepTime || 20 } : o
-      )
-    );
+    const target = ordersList.find((o) => o.id === orderId || o.cleanId === orderId);
+    updateOrderStatus({
+      id: target?.cleanId || orderId,
+      status: 'preparing',
+    });
     setAcceptModal({ isOpen: false, order: null });
-    toast.success(`Order ${orderId} accepted! Moved to Processing.`);
   };
 
   const handleConfirmReject = ({ orderId, reason, note }) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId
-          ? {
-              ...o,
-              status: 'Cancelled',
-              cancelReason: reason,
-              cancelNote: note,
-              cancelledAt: 'Just now',
-            }
-          : o
-      )
-    );
+    const target = ordersList.find((o) => o.id === orderId || o.cleanId === orderId);
+    cancelOrder({
+      id: target?.cleanId || orderId,
+      reason: reason || note || 'Customer requested cancellation before preparation.',
+    });
     setRejectModal({ isOpen: false, order: null });
-    toast.info(`Order ${orderId} rejected.`);
   };
 
   return (
-    <div className="space-y-5">
+    <div className={`space-y-5 transition-opacity ${isLoading ? 'opacity-80' : 'opacity-100'}`}>
       <OrdersHeader
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -83,11 +82,11 @@ export const VendorOrdersPage = () => {
         onSearchChange={setSearchQuery}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
-        totalOrders={filteredOrders.length}
+        totalOrders={ordersList.length}
       />
 
       <OrdersTable
-        orders={filteredOrders}
+        orders={ordersList}
         onAccept={(order) => setAcceptModal({ isOpen: true, order })}
         onReject={(order) => setRejectModal({ isOpen: true, order })}
       />
