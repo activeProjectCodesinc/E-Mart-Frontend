@@ -133,9 +133,9 @@ export const VendorOrderDetailPage = () => {
           apiOrder.deliveryInstructions ||
           (apiOrder.deliveryType === 'take_away' ? 'POS Counter Take Away' : ''),
         status: apiOrder.status
-          ? apiOrder.status === 'delivered'
-            ? 'Delivered'
-            : apiOrder.status.charAt(0).toUpperCase() + apiOrder.status.slice(1).replace('_', ' ')
+          ? (apiOrder.status === 'delivered' || apiOrder.status === 'completed'
+              ? (apiOrder.deliveryType === 'take_away' ? 'Completed' : 'Delivered')
+              : apiOrder.status.charAt(0).toUpperCase() + apiOrder.status.slice(1).replace('_', ' '))
           : 'Pending',
         rider: apiOrder.rider || null,
         deliveryProof: apiOrder.deliveryProof || null,

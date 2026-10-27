@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDownIcon, TrashIcon, CartIcon, MapPinIcon } from '@/icons';
 import { toast } from '@/utils/toast';
 
@@ -292,12 +293,23 @@ export const PosBillingSection = ({
             <span>- Rs. {extraDiscount.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span>Delivery Charge :</span>
-          <span className={deliveryCharge > 0 ? 'font-semibold text-slate-800' : 'text-slate-400'}>
-            {deliveryCharge > 0 ? `Rs. ${deliveryCharge.toFixed(2)}` : 'Rs. 0.00 (Free)'}
-          </span>
-        </div>
+        <AnimatePresence initial={false}>
+          {orderType === 'Home Delivery' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+              animate={{ opacity: 1, height: 'auto', overflow: 'hidden' }}
+              exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+            >
+              <div className="flex justify-between py-0.5">
+                <span>Delivery Charge :</span>
+                <span className={deliveryCharge > 0 ? 'font-semibold text-slate-800' : 'text-slate-400'}>
+                  {deliveryCharge > 0 ? `Rs. ${deliveryCharge.toFixed(2)}` : 'Rs. 0.00 (Free)'}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex justify-between text-slate-900 font-bold pt-1.5 border-t border-slate-100 text-sm">
           <span>Total Payable :</span>
           <span className="text-[#f95900] text-base">Rs. {total.toFixed(2)}</span>

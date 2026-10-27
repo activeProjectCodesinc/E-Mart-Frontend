@@ -7,14 +7,16 @@ import AcceptOrderModal from '@/components/vendor/orders/AcceptOrderModal';
 import RejectOrderModal from '@/components/vendor/orders/RejectOrderModal';
 import { useAdminOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
 
-const normalizeStatus = (rawStatus) => {
+const normalizeStatus = (rawStatus, deliveryType) => {
   if (!rawStatus) return 'New Order';
   const lower = String(rawStatus).toLowerCase();
   if (lower === 'new' || lower === 'pending') return 'New Order';
   if (lower === 'processing') return 'Processing';
   if (lower === 'ready' || lower === 'ready_for_pickup') return 'Ready for Pickup';
   if (lower === 'out_for_delivery') return 'Out for Delivery';
-  if (lower === 'delivered' || lower === 'completed') return 'Delivered';
+  if (lower === 'delivered' || lower === 'completed') {
+    return deliveryType === 'take_away' ? 'Completed' : 'Delivered';
+  }
   if (lower === 'cancelled' || lower === 'rejected') return 'Cancelled';
   return lower.charAt(0).toUpperCase() + lower.slice(1).replace('_', ' ');
 };
@@ -81,7 +83,7 @@ export const VendorOrdersPage = () => {
         phone: getCustomerPhone(o.customer) || o.phone || '',
         itemsCount: o.itemsCount || (Array.isArray(o.items) ? o.items.length : 1),
         total: String(o.total).startsWith('PKR') ? o.total : `PKR ${Number(o.total || 0).toFixed(2)}`,
-        status: normalizeStatus(o.status),
+        status: normalizeStatus(o.status, o.deliveryType || o.delivery_type),
         rawStatus: o.status,
         date: formatDate(o.placedAt || o.createdAt || o.date),
         placedAt: o.placedAt || o.createdAt || o.date,

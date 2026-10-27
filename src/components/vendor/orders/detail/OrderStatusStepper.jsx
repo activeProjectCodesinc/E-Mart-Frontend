@@ -91,7 +91,7 @@ export const OrderStatusStepper = ({
         {isDelivered ? (
           <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
             <CheckIcon size={12} />
-            <span>Delivered & Finalized</span>
+            <span>{isTakeAway ? 'Completed & Finalized' : 'Delivered & Finalized'}</span>
           </span>
         ) : (
           <div className="relative">
