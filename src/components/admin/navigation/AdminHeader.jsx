@@ -22,15 +22,18 @@ export const AdminHeader = ({ onOpenSidebar }) => {
   })();
 
   const currentUser = profile?.user || profile || adminUser;
-  const adminName = currentUser.fullName || currentUser.firstName || adminUser.fullName || adminUser.firstName || 'Admin';
+  const adminName =
+    currentUser.fullName ||
+    `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() ||
+    adminUser.fullName ||
+    adminUser.firstName ||
+    'Admin';
   const adminEmail = currentUser.email || adminUser.email || 'admin@emart.com';
   const adminAvatar =
     currentUser.avatar ||
     currentUser.avatarUrl ||
     currentUser.profileImage ||
-    adminUser.avatar ||
-    adminUser.avatarUrl ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80';
+    adminUser.avatar;
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -87,16 +90,23 @@ export const AdminHeader = ({ onOpenSidebar }) => {
             onClick={() => setIsDropdownOpen((p) => !p)}
             className="flex items-center gap-3 pl-3 border-l border-slate-200 hover:opacity-85 transition-opacity cursor-pointer text-left"
           >
-            <img
-              src={adminAvatar}
-              alt={adminName}
-              className="w-9 h-9 rounded-full object-cover border border-orange-200 shadow-2xs"
-              onError={(e) => {
-                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  adminName
-                )}&background=f97316&color=fff`;
-              }}
-            />
+            {adminAvatar ? (
+              <img
+                src={adminAvatar}
+                alt={adminName}
+                className="w-9 h-9 rounded-full object-cover border border-orange-200 shadow-2xs"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    adminName
+                  )}&background=f97316&color=fff`;
+                }}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-xs flex items-center justify-center border border-orange-200 shadow-2xs">
+                {adminName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="hidden sm:block">
               <span className="text-xs font-semibold text-slate-900 block leading-tight">{adminName}</span>
               <span className="text-[10px] text-slate-400 font-medium block">Super Admin</span>
@@ -110,12 +120,31 @@ export const AdminHeader = ({ onOpenSidebar }) => {
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div className="absolute right-0 mt-2.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              <div className="px-4 py-3 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-900 truncate">{adminName}</p>
-                <p className="text-[11px] text-slate-400 truncate">{adminEmail}</p>
-                <span className="inline-flex mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-600 border border-orange-200/60">
-                  Super Admin
-                </span>
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+                {adminAvatar ? (
+                  <img
+                    src={adminAvatar}
+                    alt={adminName}
+                    className="w-10 h-10 rounded-full object-cover border border-orange-200 shrink-0 shadow-2xs"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        adminName
+                      )}&background=f97316&color=fff`;
+                    }}
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-sm flex items-center justify-center border border-orange-200 shrink-0 shadow-2xs">
+                    {adminName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-900 truncate">{adminName}</p>
+                  <p className="text-[11px] text-slate-400 truncate">{adminEmail}</p>
+                  <span className="inline-flex mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-600 border border-orange-200/60">
+                    Super Admin
+                  </span>
+                </div>
               </div>
 
               <div className="py-1">

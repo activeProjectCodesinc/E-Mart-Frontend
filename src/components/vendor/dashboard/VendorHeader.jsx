@@ -1,8 +1,13 @@
 import { BellIcon, MenuIcon } from '@/icons';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
+import { useSettings } from '@/hooks/useSettings';
 
 export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName = 'User Name' }) => {
   const [bellRef, bellTrigger] = useAnimatedIcon();
+  const { profile } = useSettings();
+
+  const userAvatar = profile?.avatar || profile?.avatarUrl || profile?.profileImage;
+  const displayName = profile?.fullName || profile?.firstName || userName;
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between px-3 sm:px-8 py-2.5 sm:py-4 bg-white/95 backdrop-blur-md border-b border-slate-100">
@@ -19,7 +24,7 @@ export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName
         <div className="min-w-0">
           <h1 className="text-xs xs:text-sm sm:text-2xl font-semibold text-slate-900 tracking-tight flex items-center gap-1">
             <span>Good Morning!</span>
-            <span className="hidden sm:inline">{userName}</span>
+            <span className="hidden sm:inline">{displayName}</span>
             <span className="inline-block animate-pulse shrink-0">👋</span>
           </h1>
           <p className="text-[10px] sm:text-sm text-slate-500 mt-0.5 leading-tight">
@@ -42,11 +47,17 @@ export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName
         </button>
 
         <div className="flex items-center gap-2 p-1 sm:pl-1.5 sm:pr-3 sm:py-1.5 rounded-full bg-white border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all cursor-pointer">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80"
-            alt={storeName}
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-orange-200"
-          />
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt={storeName}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-orange-200"
+            />
+          ) : (
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-xs flex items-center justify-center ring-1 ring-orange-200">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="hidden sm:block text-left leading-none">
             <p className="text-xs font-semibold text-slate-800">{storeName}</p>
             <p className="text-[10px] text-slate-400 mt-0.5">Seller</p>

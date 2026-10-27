@@ -84,13 +84,21 @@ export const VendorSettingsPage = () => {
   const handleSaveAccount = async (overrideData) => {
     try {
       const targetData = { ...accountData, ...(overrideData || {}) };
-      await updateProfile({
-        fullName: targetData.fullName,
-        phone: targetData.phone,
-        avatar: targetData.avatar,
-        avatarUrl: targetData.avatar,
-        profileImage: targetData.avatar,
-      });
+      if (targetData.avatarFile) {
+        const formData = new FormData();
+        formData.append('fullName', targetData.fullName || '');
+        formData.append('phone', targetData.phone || '');
+        formData.append('file', targetData.avatarFile);
+        await updateProfile(formData);
+      } else {
+        await updateProfile({
+          fullName: targetData.fullName,
+          phone: targetData.phone,
+          avatar: targetData.avatar,
+          avatarUrl: targetData.avatar,
+          profileImage: targetData.avatar,
+        });
+      }
     } catch {
       // Error notifications handled by hook
     }
