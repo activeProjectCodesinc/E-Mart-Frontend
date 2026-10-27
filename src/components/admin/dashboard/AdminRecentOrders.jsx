@@ -9,7 +9,10 @@ export const AdminRecentOrders = ({ orders }) => {
     if (orders && Array.isArray(orders)) {
       return orders.map((o) => ({
         id: o.orderNumber || o.id,
-        customer: typeof o.customer === 'object' ? o.customer.fullName : (o.customer || 'Customer'),
+        customer:
+          typeof o.customer === 'object'
+            ? o.customer?.name || o.customer?.fullName || 'Customer'
+            : o.customer || 'Customer',
         vendor: 'Official Store',
         amount: String(o.total).startsWith('PKR') ? o.total : `PKR ${o.total}`,
         status: o.status ? o.status.charAt(0).toUpperCase() + o.status.slice(1).replace('_', ' ') : 'Pending',

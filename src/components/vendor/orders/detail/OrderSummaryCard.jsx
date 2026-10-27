@@ -13,12 +13,12 @@ export const OrderSummaryCard = ({ order }) => {
 
         <div className="flex items-center justify-between text-slate-500">
           <span>Delivery Fee</span>
-          <span className="font-semibold text-slate-800">{order.deliveryFee || '$0.00'}</span>
+          <span className="font-semibold text-slate-800">{order.deliveryFee || 'PKR 0.00'}</span>
         </div>
 
         <div className="flex items-center justify-between text-slate-500">
           <span>Discount</span>
-          <span className="font-semibold text-slate-800">{order.discount || '$0.00'}</span>
+          <span className="font-semibold text-slate-800">{order.discount || 'PKR 0.00'}</span>
         </div>
 
         <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">

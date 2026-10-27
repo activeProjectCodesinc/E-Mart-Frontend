@@ -48,15 +48,86 @@ export const VendorOrderDetailPage = () => {
 
   const order = useMemo(() => {
     if (apiOrder) {
+      const cust = apiOrder.customer;
+      const custName =
+        typeof cust === 'object' && cust !== null
+          ? cust.name ||
+            cust.fullName ||
+            `${cust.firstName || ''} ${cust.lastName || ''}`.trim() ||
+            'Customer'
+          : typeof cust === 'string' && cust.trim()
+          ? cust.trim()
+          : 'Customer';
+
+      const custPhone =
+        (typeof cust === 'object' && cust !== null ? cust.phone : null) ||
+        apiOrder.phone ||
+        '';
+
+      const formatAddress = (addr) => {
+        if (!addr) {
+          return apiOrder.deliveryType === 'take_away'
+            ? 'Take away counter order'
+            : 'Address provided at checkout';
+        }
+        if (typeof addr === 'string') return addr;
+        if (typeof addr === 'object') {
+          return (
+            [addr.addressLine || addr.address, addr.area, addr.city]
+              .filter(Boolean)
+              .join(', ') || 'Address provided at checkout'
+          );
+        }
+        return String(addr);
+      };
+
+      const normalizedItems = Array.isArray(apiOrder.items)
+        ? apiOrder.items.map((item, idx) => {
+            const unitPrice = Number(item.price || 0);
+            const quantity = Number(item.quantity || item.qty || 1);
+            const lineTotal =
+              item.lineTotal !== undefined
+                ? Number(item.lineTotal)
+                : unitPrice * quantity;
+            return {
+              id: item.productId || item.id || `item-${idx}`,
+              name: item.name || 'Product Item',
+              category: item.category || item.unit || 'Standard',
+              price: `PKR ${unitPrice.toFixed(2)}`,
+              qty: quantity,
+              total: `PKR ${lineTotal.toFixed(2)}`,
+              img:
+                item.image ||
+                item.imageUrl ||
+                item.img ||
+                'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
+            };
+          })
+        : [];
+
+      const billing = apiOrder.billing || {};
+      const subtotalVal = billing.subtotal ?? apiOrder.subtotal ?? apiOrder.total ?? 0;
+      const deliveryFeeVal = billing.deliveryFee ?? apiOrder.deliveryFee ?? 0;
+      const discountVal = billing.discount ?? apiOrder.discount ?? 0;
+      const totalVal = billing.total ?? apiOrder.total ?? 0;
+
       return {
-        id: apiOrder.orderNumber || apiOrder.id,
+        id: apiOrder.orderNumber ? `#${apiOrder.orderNumber}` : (apiOrder.id ? `#${apiOrder.id.slice(0, 8)}` : '#EM'),
         cleanId: apiOrder.id,
-        customer: apiOrder.customer?.fullName || apiOrder.customer || 'Customer',
-        phone: apiOrder.customer?.phone || '',
-        address: apiOrder.deliveryAddress || apiOrder.address || 'Address provided at checkout',
-        items: apiOrder.items || [],
-        total: apiOrder.total ? (String(apiOrder.total).startsWith('PKR') ? apiOrder.total : `PKR ${apiOrder.total}`) : 'PKR 0.00',
-        status: apiOrder.status ? apiOrder.status.charAt(0).toUpperCase() + apiOrder.status.slice(1).replace('_', ' ') : 'Pending',
+        customer: custName,
+        phone: custPhone,
+        address: formatAddress(apiOrder.deliveryAddress || apiOrder.address),
+        items: normalizedItems,
+        subtotal: `PKR ${Number(subtotalVal).toFixed(2)}`,
+        deliveryFee: `PKR ${Number(deliveryFeeVal).toFixed(2)}`,
+        discount: `PKR ${Number(discountVal).toFixed(2)}`,
+        total: `PKR ${Number(totalVal).toFixed(2)}`,
+        paymentMethod: billing.paymentMethod || apiOrder.paymentMethod || 'Cash',
+        status: apiOrder.status
+          ? apiOrder.status === 'delivered'
+            ? 'Delivered'
+            : apiOrder.status.charAt(0).toUpperCase() + apiOrder.status.slice(1).replace('_', ' ')
+          : 'Pending',
         rider: apiOrder.rider || DEFAULT_RIDER,
         deliveryProof: apiOrder.deliveryProof || DEFAULT_PROOF,
       };

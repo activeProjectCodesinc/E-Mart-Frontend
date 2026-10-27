@@ -98,7 +98,10 @@ export const VendorOverviewPage = () => {
         return {
           id: order.orderNumber || order.id,
           cleanId: order.id,
-          customer: typeof order.customer === 'object' ? order.customer.fullName : (order.customer || 'Customer'),
+          customer:
+            typeof order.customer === 'object'
+              ? order.customer?.name || order.customer?.fullName || 'Customer'
+              : order.customer || 'Customer',
           items: order.itemsCount || 1,
           total: String(order.total).startsWith('PKR') ? order.total : `PKR ${order.total}`,
           status: order.status
