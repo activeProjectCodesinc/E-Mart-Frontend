@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { BellIcon, MenuIcon, ChevronDownIcon, SettingsIcon, LockIcon } from '@/icons';
 import { toast } from '@/utils/toast';
 import { post } from '@/services/apiServices';
@@ -8,10 +8,15 @@ import { getRefreshToken, clearAllAuth } from '@/services/tokenService';
 
 export const AdminHeader = ({ onOpenSidebar }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef(null);
   const { profile } = useSettings();
+
+  const notificationsPath = location.pathname.startsWith('/admin/store')
+    ? '/admin/store/notifications'
+    : '/admin/notifications';
 
   const adminUser = (() => {
     try {
@@ -75,6 +80,8 @@ export const AdminHeader = ({ onOpenSidebar }) => {
         {/* Notification Bell */}
         <button
           type="button"
+          onClick={() => navigate(notificationsPath)}
+          aria-label="View notifications"
           className="relative p-2 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-orange-600 hover:border-orange-200 shadow-2xs transition-all cursor-pointer"
         >
           <BellIcon size={18} />

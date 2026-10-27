@@ -1,8 +1,12 @@
+import { useNavigate } from 'react-router-dom';
 import { BellIcon, MenuIcon } from '@/icons';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { useSettings } from '@/hooks/useSettings';
+import { usePortalBase } from '@/utils/usePortalBase';
 
 export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName = 'User Name' }) => {
+  const navigate = useNavigate();
+  const { getRoute } = usePortalBase();
   const [bellRef, bellTrigger] = useAnimatedIcon();
   const { profile } = useSettings();
 
@@ -37,6 +41,7 @@ export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName
       <div className="flex items-center gap-1.5 sm:gap-4 shrink-0 pl-1.5">
         <button
           type="button"
+          onClick={() => navigate(getRoute('/notifications'))}
           onMouseEnter={bellTrigger.onMouseEnter}
           onMouseLeave={bellTrigger.onMouseLeave}
           className="relative p-1.5 sm:p-2.5 rounded-full bg-white border border-slate-200/80 shadow-xs hover:border-orange-200 hover:bg-orange-50/40 text-slate-600 hover:text-orange-600 transition-all cursor-pointer"
