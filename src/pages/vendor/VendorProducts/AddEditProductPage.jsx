@@ -9,7 +9,7 @@ import ProductPricingInventoryStep from '@/components/vendor/products/form/Produ
 import ProductImagesPublishStep from '@/components/vendor/products/form/ProductImagesPublishStep';
 import UploadSuccessModal from '@/components/vendor/products/form/UploadSuccessModal';
 import UploadErrorModal from '@/components/vendor/products/form/UploadErrorModal';
-import { useCreateProduct, useUpdateProduct, useAdminProductDetail, useCategories } from '@/hooks';
+import { useCreateProduct, useUpdateProduct, useAdminProductDetail, useCategories, useUploadProductImages } from '@/hooks';
 
 const DEFAULT_BLANK_PRODUCT = {
   name: '',
@@ -26,6 +26,7 @@ const DEFAULT_BLANK_PRODUCT = {
   stockStatus: 'Active',
   allowPurchase: true,
   images: [],
+  imageFiles: [],
   tags: ['fresh', 'organic'],
   countryOfOrigin: 'Pakistan',
   status: 'Active',
@@ -46,6 +47,7 @@ export const AddEditProductPage = () => {
   const { categories } = useCategories();
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
+  const { mutateAsync: uploadProductImages, isPending: isUploadingImages } = useUploadProductImages();
   const [formData, setFormData] = useState(DEFAULT_BLANK_PRODUCT);
 
   useEffect(() => {
@@ -113,11 +115,33 @@ export const AddEditProductPage = () => {
       tags: formData.tags || ['fresh'],
     };
 
-    const options = { onSuccess: () => setShowSuccessModal(true) };
+    const uploadFilesForProduct = async (prodId) => {
+      if (prodId && formData.imageFiles && formData.imageFiles.length > 0) {
+        const fd = new FormData();
+        formData.imageFiles.forEach((file) => fd.append('files', file));
+        try {
+          await uploadProductImages({ id: prodId, formData: fd });
+        } catch (err) {
+          console.error('Image upload failed:', err);
+        }
+      }
+      setShowSuccessModal(true);
+    };
+
     if (isEditing) {
-      updateProduct({ id, ...payload }, options);
+      updateProduct(
+        { id, ...payload },
+        {
+          onSuccess: () => uploadFilesForProduct(id),
+        }
+      );
     } else {
-      createProduct(payload, options);
+      createProduct(payload, {
+        onSuccess: (res) => {
+          const newProductId = res?.data?.product?.id || res?.product?.id || res?.id;
+          uploadFilesForProduct(newProductId);
+        },
+      });
     }
   };
 
@@ -169,7 +193,7 @@ export const AddEditProductPage = () => {
           onChange={handleFieldChange}
           onPublish={handlePublish}
           onBack={() => setStep(2)}
-          isSubmitting={isCreating || isUpdating}
+          isSubmitting={isCreating || isUpdating || isUploadingImages}
         />
       )}
 
