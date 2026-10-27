@@ -38,19 +38,51 @@ export const VendorInventoryPage = () => {
         const stockNum = Number(item.stock ?? 0);
         const lowAlert = Number(item.lowStockAlert ?? 10);
         const derivedStatus =
-          stockNum === 0 ? 'Out of Stock' : stockNum <= lowAlert ? 'Low Stock' : 'In Stock';
+          typeof item.status === 'string'
+            ? item.status
+            : stockNum === 0
+            ? 'Out of Stock'
+            : stockNum <= lowAlert
+            ? 'Low Stock'
+            : 'In Stock';
+
+        // Extract clean strings in case backend returns relation objects { id, name }
+        const unitStr =
+          typeof item.unit === 'object' && item.unit !== null
+            ? (item.unit.name || item.unit.symbol || item.unit.code || '1 unit')
+            : (item.unit || '1 unit');
+
+        const categoryStr =
+          typeof item.category === 'object' && item.category !== null
+            ? (item.category.name || item.category.title || 'General')
+            : (item.category || 'General');
+
+        const nameStr =
+          typeof item.name === 'object' && item.name !== null
+            ? (item.name.name || item.name.title || 'Product')
+            : (item.name || 'Product');
+
+        const skuStr =
+          typeof item.sku === 'object' && item.sku !== null
+            ? (item.sku.code || item.sku.name || 'N/A')
+            : (item.sku || item.productCode || 'N/A');
 
         return {
+          ...item,
           id: item.id,
           variantId: item.variantId || item.id,
-          name: item.name,
-          sku: item.sku || item.productCode || 'N/A',
-          unit: item.unit || '1 unit',
+          name: nameStr,
+          sku: skuStr,
+          unit: unitStr,
           stock: stockNum,
           lowStockAlert: lowAlert,
           status: derivedStatus,
-          image: item.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
-          category: typeof item.category === 'object' ? item.category?.name : (item.category || 'General'),
+          image: item.imageUrl || item.image || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+          category: categoryStr,
+          price: Number(item.price ?? item.sellingPrice ?? item.salePrice ?? 0),
+          costPrice: Number(item.costPrice ?? item.cost ?? item.purchasePrice ?? item.price ?? 0),
+          lastAdded: item.lastAdded || (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'),
+          lastUpdated: item.lastUpdated || (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'N/A'),
         };
       });
     }

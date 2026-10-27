@@ -6,6 +6,13 @@ const STATUS_BADGES = {
   'Out of Stock': 'bg-[#fef2f2] text-[#ef4444] border-[#fecaca]',
 };
 
+const renderText = (value, fallback = '') => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (typeof value === 'object') return value.name || value.symbol || value.title || value.code || fallback;
+  return fallback;
+};
+
 export const InventoryTable = ({
   items = [],
   selectedIds = [],
@@ -47,7 +54,8 @@ export const InventoryTable = ({
             ) : (
               items.map((item) => {
                 const isSelected = selectedIds.includes(item.id);
-                const badgeStyle = STATUS_BADGES[item.status] || STATUS_BADGES['In Stock'];
+                const statusStr = renderText(item.status, 'In Stock');
+                const badgeStyle = STATUS_BADGES[statusStr] || STATUS_BADGES['In Stock'];
 
                 return (
                   <tr
@@ -67,15 +75,15 @@ export const InventoryTable = ({
                       <div className="flex items-center gap-3">
                         <img
                           src={item.image}
-                          alt={item.name}
+                          alt={renderText(item.name, 'Product')}
                           className="w-10 h-10 rounded-xl object-cover bg-slate-100 border border-slate-200/80 shrink-0"
                         />
                         <div>
                           <h4 className="font-semibold text-slate-800 group-hover:text-orange-600 transition-colors">
-                            {item.name}
+                            {renderText(item.name, 'Product')}
                           </h4>
                           <span className="text-[11px] text-slate-400">
-                            {item.unit}
+                            {renderText(item.unit, '1 unit')}
                           </span>
                         </div>
                       </div>
@@ -99,7 +107,7 @@ export const InventoryTable = ({
                       <span
                         className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${badgeStyle}`}
                       >
-                        {item.status}
+                        {statusStr}
                       </span>
                     </td>
 

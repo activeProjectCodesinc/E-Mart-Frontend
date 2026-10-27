@@ -98,7 +98,7 @@ export const QuickStockUpdateCard = ({
               className="w-full pl-3.5 pr-12 py-2 text-xs sm:text-sm bg-white border border-slate-200/90 rounded-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
             />
             <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-              {product.unit}
+              {typeof product.unit === 'object' && product.unit !== null ? (product.unit.name || product.unit.symbol || 'unit') : (product.unit || 'unit')}
             </span>
           </div>
         </div>
