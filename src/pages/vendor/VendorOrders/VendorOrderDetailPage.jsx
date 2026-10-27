@@ -6,6 +6,7 @@ import { usePortalBase } from '@/utils/usePortalBase';
 import { INITIAL_ORDERS } from '@/mock/vendor/vendorOrders.mock';
 import CustomerInfoCard from '@/components/vendor/orders/detail/CustomerInfoCard';
 import RiderInfoCard from '@/components/vendor/orders/detail/RiderInfoCard';
+import TakeAwayInfoCard from '@/components/vendor/orders/detail/TakeAwayInfoCard';
 import OrderSummaryCard from '@/components/vendor/orders/detail/OrderSummaryCard';
 import OrderItemsCard from '@/components/vendor/orders/detail/OrderItemsCard';
 import OrderStatusStepper from '@/components/vendor/orders/detail/OrderStatusStepper';
@@ -19,8 +20,10 @@ const STATUS_PILLS = {
   'New Order': 'bg-amber-50 text-amber-700 border-amber-200',
   Processing: 'bg-blue-50 text-blue-600 border-blue-200',
   'Ready For Pickup': 'bg-sky-50 text-sky-600 border-sky-200',
+  'Ready for Pickup': 'bg-sky-50 text-sky-600 border-sky-200',
   'Out For Delivery': 'bg-orange-50 text-orange-600 border-orange-200',
-  Delivered: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  'Out for Delivery': 'bg-orange-50 text-orange-600 border-orange-200',
+  Delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
 const DEFAULT_RIDER = {
@@ -29,14 +32,6 @@ const DEFAULT_RIDER = {
   rating: '4.8',
   deliveries: 320,
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60',
-};
-
-const DEFAULT_PROOF = {
-  photos: [
-    'https://images.unsplash.com/photo-1584473457406-6240486418e9?w=300&auto=format&fit=crop&q=80',
-  ],
-  completedAt: 'Just now',
-  riderNote: 'Package delivered securely.',
 };
 
 export const VendorOrderDetailPage = () => {
@@ -97,39 +92,56 @@ export const VendorOrderDetailPage = () => {
               qty: quantity,
               total: `PKR ${lineTotal.toFixed(2)}`,
               img:
-                item.image ||
                 item.imageUrl ||
+                item.image ||
                 item.img ||
                 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
             };
           })
         : [];
 
-      const billing = apiOrder.billing || {};
-      const subtotalVal = billing.subtotal ?? apiOrder.subtotal ?? apiOrder.total ?? 0;
-      const deliveryFeeVal = billing.deliveryFee ?? apiOrder.deliveryFee ?? 0;
-      const discountVal = billing.discount ?? apiOrder.discount ?? 0;
-      const totalVal = billing.total ?? apiOrder.total ?? 0;
+      const summary = apiOrder.summary || apiOrder.billing || {};
+      const subtotalVal = summary.subtotal ?? apiOrder.subtotal ?? apiOrder.total ?? 0;
+      const deliveryFeeVal = summary.deliveryFee ?? apiOrder.deliveryFee ?? 0;
+      const discountVal =
+        summary.couponDiscount ??
+        summary.discount ??
+        summary.savings ??
+        apiOrder.discount ??
+        0;
+      const totalVal = summary.total ?? apiOrder.total ?? 0;
+      const paymentMethod =
+        apiOrder.payment?.method || summary.paymentMethod || apiOrder.paymentMethod || 'Cash';
+      const paymentStatus = apiOrder.payment?.status || 'paid';
 
       return {
         id: apiOrder.orderNumber ? `#${apiOrder.orderNumber}` : (apiOrder.id ? `#${apiOrder.id.slice(0, 8)}` : '#EM'),
         cleanId: apiOrder.id,
+        orderNumber: apiOrder.orderNumber || apiOrder.id,
         customer: custName,
         phone: custPhone,
-        address: formatAddress(apiOrder.deliveryAddress || apiOrder.address),
+        address: formatAddress(apiOrder.deliveryAddress || apiOrder.address || apiOrder.customer?.location),
         items: normalizedItems,
         subtotal: `PKR ${Number(subtotalVal).toFixed(2)}`,
         deliveryFee: `PKR ${Number(deliveryFeeVal).toFixed(2)}`,
         discount: `PKR ${Number(discountVal).toFixed(2)}`,
         total: `PKR ${Number(totalVal).toFixed(2)}`,
-        paymentMethod: billing.paymentMethod || apiOrder.paymentMethod || 'Cash',
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatus,
+        deliveryType: apiOrder.deliveryType || 'take_away',
+        deliveryInstructions:
+          apiOrder.deliveryInstructions ||
+          (apiOrder.deliveryType === 'take_away' ? 'POS Counter Take Away' : ''),
         status: apiOrder.status
           ? apiOrder.status === 'delivered'
             ? 'Delivered'
             : apiOrder.status.charAt(0).toUpperCase() + apiOrder.status.slice(1).replace('_', ' ')
           : 'Pending',
-        rider: apiOrder.rider || DEFAULT_RIDER,
-        deliveryProof: apiOrder.deliveryProof || DEFAULT_PROOF,
+        rider: apiOrder.rider || null,
+        deliveryProof: apiOrder.deliveryProof || null,
+        timeline: apiOrder.timeline || [],
+        placedAt: apiOrder.placedAt || null,
+        actions: apiOrder.actions || {},
       };
     }
     const formattedId = id?.startsWith('#') ? id : `#${id}`;
@@ -160,12 +172,12 @@ export const VendorOrderDetailPage = () => {
         </Link>
 
         <div className="flex items-center gap-3">
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Order {order.id}
           </h1>
 
           <span
-            className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${
+            className={`px-3 py-0.5 rounded-full text-xs font-bold border ${
               STATUS_PILLS[order.status] || STATUS_PILLS.Completed
             }`}
           >
@@ -185,14 +197,18 @@ export const VendorOrderDetailPage = () => {
 
             {isCancelled ? (
               <OrderCancelledCard order={order} />
-            ) : (
+            ) : order.deliveryType === 'take_away' ? (
+              <TakeAwayInfoCard order={order} />
+            ) : order.rider ? (
               <RiderInfoCard rider={order.rider} />
+            ) : (
+              <TakeAwayInfoCard order={order} />
             )}
           </div>
 
           <OrderItemsCard items={order.items || []} />
 
-          {!isCancelled && (
+          {!isCancelled && order.deliveryProof && (
             <DeliveryProofCard deliveryProof={order.deliveryProof} />
           )}
         </div>
@@ -203,6 +219,9 @@ export const VendorOrderDetailPage = () => {
           {!isCancelled && (
             <OrderStatusStepper
               currentStatus={order.status}
+              deliveryType={order.deliveryType}
+              timeline={order.timeline}
+              placedAt={order.placedAt}
               onStatusChange={handleStatusChange}
             />
           )}
