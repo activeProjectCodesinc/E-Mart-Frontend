@@ -22,6 +22,11 @@ export const QUERY_KEYS = {
     },
     STORE: {
       PROFILE: ['admin', 'store', 'management'],
+      CUSTOMERS: {
+        ALL: ['admin', 'store', 'customers'],
+        LIST: (filters = {}) => ['admin', 'store', 'customers', 'list', filters],
+        DETAIL: (id) => ['admin', 'store', 'customers', 'detail', id],
+      },
       POS: {
         ALL: ['admin', 'store', 'pos'],
         PRODUCTS: (params = {}) => ['admin', 'store', 'pos', 'products', params],
