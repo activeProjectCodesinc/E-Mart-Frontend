@@ -1,7 +1,10 @@
 import { PAYMENT_METHOD_DATA } from '@/mock/vendor/vendorAnalytics.mock';
 import DonutChart from './DonutChart';
 
-export const SalesByPaymentMethodCard = ({ data = PAYMENT_METHOD_DATA }) => {
+export const SalesByPaymentMethodCard = ({
+  data = PAYMENT_METHOD_DATA,
+  totalSales = 'PKR 0',
+}) => {
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
       <div className="mb-4">
@@ -11,9 +14,9 @@ export const SalesByPaymentMethodCard = ({ data = PAYMENT_METHOD_DATA }) => {
       </div>
 
       <DonutChart
-        data={data}
-        centerPrimary="$5,420"
-        centerSecondary="TOTAL SALES"
+        data={data && data.length > 0 ? data : PAYMENT_METHOD_DATA}
+        centerPrimary={totalSales}
+        centerSecondary="PAYMENT TOTAL"
       />
     </div>
   );

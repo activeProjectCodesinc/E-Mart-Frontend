@@ -19,7 +19,7 @@ export const PayoutBreakdownCard = ({ breakdown = [], total = 1120.0 }) => {
           <tbody className="divide-y divide-slate-100">
             {breakdown.map((item, idx) => {
               const isPositive = item.amount > 0;
-              const formattedAmount = `${isPositive ? '+' : '-'}$${Math.abs(item.amount).toFixed(2)}`;
+              const formattedAmount = `${isPositive ? '+' : '-'}PKR ${Math.abs(item.amount).toFixed(2)}`;
 
               return (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -48,7 +48,7 @@ export const PayoutBreakdownCard = ({ breakdown = [], total = 1120.0 }) => {
                 —
               </td>
               <td className="py-3.5 px-4 sm:px-6 text-right text-slate-900 font-semibold">
-                ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                PKR {Number(total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </td>
             </tr>
           </tbody>

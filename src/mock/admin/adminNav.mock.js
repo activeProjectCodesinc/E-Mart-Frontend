@@ -21,7 +21,7 @@ export const ADMIN_STORE_MENU_ITEMS = [
   { id: 'products', label: 'Products', path: '/admin/store/products', icon: 'BoxIcon' },
   { id: 'inventory', label: 'Inventory', path: '/admin/store/inventory', icon: 'ArchiveIcon' },
   { id: 'customers', label: 'Customers', path: '/admin/store/customers', icon: 'UserIcon' },
-  { id: 'finance', label: 'Finance', path: '/admin/store/finance', icon: 'DollarSignIcon' },
+  // { id: 'finance', label: 'Finance', path: '/admin/store/finance', icon: 'DollarSignIcon' },
   { id: 'pos', label: 'POS', path: '/admin/store/pos', icon: 'CreditCardIcon' },
   { id: 'promotions', label: 'Promotions', path: '/admin/store/promotions', icon: 'BadgePercentIcon' },
   { id: 'analytics', label: 'Report & Analytics', path: '/admin/store/analytics', icon: 'ChartColumnIncreasingIcon' },

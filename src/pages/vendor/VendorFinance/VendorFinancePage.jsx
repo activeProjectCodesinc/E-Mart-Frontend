@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePortalBase } from '@/utils/usePortalBase';
 import {
@@ -17,105 +17,213 @@ import EarningsOverviewChart from '@/components/vendor/finance/EarningsOverviewC
 import PayoutHistoryTable from '@/components/vendor/finance/PayoutHistoryTable';
 import RequestPayoutModal from '@/components/vendor/finance/RequestPayoutModal';
 import EditBankAccountModal from '@/components/vendor/finance/EditBankAccountModal';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { apiRoutes } from '@/services/apiRoutes';
+import { QUERY_KEYS } from '@/services/queryKeys';
+import { post, put } from '@/services/apiServices';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/utils/toast';
 
 export const VendorFinancePage = () => {
   const navigate = useNavigate();
-  const { isAdminStore, getRoute } = usePortalBase();
-  const [balance, setBalance] = useState(INITIAL_PAYOUT_BALANCE);
-  const [bankAccount, setBankAccount] = useState(INITIAL_BANK_ACCOUNT);
-  const [payouts, setPayouts] = useState(PAYOUT_HISTORY);
+  const queryClient = useQueryClient();
+  const { getRoute } = usePortalBase();
+
+  const [dateRange] = useState(() => {
+    const now = new Date();
+    const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const to = now.toISOString().split('T')[0];
+    return { from, to };
+  });
+
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
 
-  const handleRequestPayout = (amount) => {
-    setBalance((prev) => ({
-      ...prev,
-      available: Math.max(0, prev.available - amount),
-    }));
+  // Fetch Finance Overview from Backend API
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.FINANCE?.OVERVIEW(dateRange) || [
+    'admin',
+    'store',
+    'finance',
+    'overview',
+    dateRange,
+  ];
+  const financeUrl =
+    apiRoutes.admin?.store?.finance?.base || '/admin/store/finance';
 
-    const newPayout = {
-      id: `PAY-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: 'Today',
-      amount: amount,
-      status: 'Processing',
-      method: 'Bank Transfer',
-      bank: `${bankAccount.bankName} (${bankAccount.accountNumber.slice(-8)})`,
-      timeline: [
-        { step: 'Initiated', time: 'Just now', completed: true },
-        { step: 'Processing', time: 'Estimated 24-48 hrs', completed: false },
-        { step: 'Completed', time: 'Pending confirmation', completed: false },
-      ],
-      breakdown: [
-        { description: 'Payout Request', orderId: '—', amount: amount, type: 'credit' },
-        { description: 'Transfer Fee', orderId: '—', amount: 0, type: 'fee' },
-      ],
+  const { data: response, isLoading, refetch } = useApiQuery(
+    queryKey,
+    financeUrl,
+    {
+      params: dateRange,
+      staleTime: 1000 * 60 * 3,
+    }
+  );
+
+  const apiData = response?.data;
+
+  // Normalized Metrics
+  const metrics = useMemo(() => {
+    return apiData?.metrics || null;
+  }, [apiData]);
+
+  // Normalized Balance
+  const balance = useMemo(() => {
+    const available = Number(
+      apiData?.balance?.availableRaw ?? apiData?.balance?.available ?? INITIAL_PAYOUT_BALANCE.available
+    );
+    const minimum = Number(
+      apiData?.balance?.minimumAmount ?? INITIAL_PAYOUT_BALANCE.minimumAmount
+    );
+
+    return {
+      available,
+      minimumAmount: minimum,
+      autoPayout: apiData?.balance?.autoPayout ?? INITIAL_PAYOUT_BALANCE.autoPayout,
+      frequency: apiData?.balance?.frequency || INITIAL_PAYOUT_BALANCE.frequency,
+      nextPayoutDate:
+        apiData?.balance?.nextPayoutDate || INITIAL_PAYOUT_BALANCE.nextPayoutDate,
     };
+  }, [apiData]);
 
-    setPayouts((prev) => [newPayout, ...prev]);
-    setIsRequestModalOpen(false);
-    toast.success(`Payout request of PKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} submitted successfully!`);
+  // Normalized Bank Account
+  const bankAccount = useMemo(() => {
+    if (apiData?.bankAccount) {
+      return {
+        bankName: apiData.bankAccount.bankName,
+        accountTitle: apiData.bankAccount.accountTitle,
+        accountNumber: apiData.bankAccount.accountNumber,
+        rawAccountNumber:
+          apiData.bankAccount.rawAccountNumber || apiData.bankAccount.accountNumber,
+        iban: apiData.bankAccount.iban || '',
+        branchCode: apiData.bankAccount.branchCode || '',
+        isVerified: Boolean(apiData.bankAccount.isVerified),
+      };
+    }
+    return INITIAL_BANK_ACCOUNT;
+  }, [apiData]);
+
+  // Normalized Earnings Chart
+  const chartData = useMemo(() => {
+    if (apiData?.earningsChart && Array.isArray(apiData.earningsChart) && apiData.earningsChart.length > 0) {
+      return apiData.earningsChart.map((item) => ({
+        label: item.day || item.date || item.label,
+        sales: Number(item.totalSales ?? item.sales ?? 0),
+        net: Number(item.netEarnings ?? item.net ?? 0),
+      }));
+    }
+    return EARNINGS_CHART_DATA;
+  }, [apiData]);
+
+  // Normalized Payouts History
+  const payouts = useMemo(() => {
+    if (apiData?.payouts && Array.isArray(apiData.payouts)) {
+      return apiData.payouts;
+    }
+    return PAYOUT_HISTORY;
+  }, [apiData]);
+
+  // Submit Payout Request Mutation
+  const handleRequestPayout = async (amount, notes = '') => {
+    try {
+      const payoutsUrl =
+        apiRoutes.admin?.store?.finance?.payouts || '/admin/store/finance/payouts';
+      await post(payoutsUrl, { amount, notes });
+      toast.success(
+        `Payout request of PKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} submitted successfully!`
+      );
+      setIsRequestModalOpen(false);
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch (err) {
+      console.error('Payout request error:', err);
+      toast.error('Failed to submit payout request');
+    }
   };
 
-  const handleSaveBank = (updatedBank) => {
-    setBankAccount(updatedBank);
-    setIsEditBankModalOpen(false);
-    toast.success('Bank account details updated successfully!');
+  // Update Bank Account Mutation
+  const handleSaveBank = async (updatedBank) => {
+    try {
+      const bankUrl =
+        apiRoutes.admin?.store?.finance?.bankAccount ||
+        '/admin/store/finance/bank-account';
+      await put(bankUrl, {
+        bankName: updatedBank.bankName,
+        accountTitle: updatedBank.accountTitle,
+        accountNumber: updatedBank.rawAccountNumber || updatedBank.accountNumber,
+        iban: updatedBank.iban,
+        branchCode: updatedBank.branchCode || '',
+      });
+      toast.success('Bank account details updated successfully!');
+      setIsEditBankModalOpen(false);
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch (err) {
+      console.error('Update bank account error:', err);
+      toast.error('Failed to update bank account');
+    }
   };
+
+  const formattedDateRange = useMemo(() => {
+    const f = new Date(dateRange.from).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const t = new Date(dateRange.to).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return `${f} - ${t}`;
+  }, [dateRange]);
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <FinanceHeader />
+      <FinanceHeader dateRange={formattedDateRange} />
 
-      <FinanceMetricsGrid />
+      <FinanceMetricsGrid metrics={metrics} />
 
-      {!isAdminStore && (
-        <>
-          <PayoutBannerCard
-            amount={`PKR ${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            nextDate={balance.nextPayoutDate}
-            onRequestPayout={() => setIsRequestModalOpen(true)}
-          />
+      <PayoutBannerCard
+        amount={`PKR ${balance.available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        nextDate={balance.nextPayoutDate}
+        onRequestPayout={() => setIsRequestModalOpen(true)}
+      />
 
-          <PayoutBalanceCard
-            available={`PKR ${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            minimum={`PKR ${balance.minimumAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            autoPayoutEnabled={balance.autoPayout}
-            autoPayoutFrequency={balance.frequency}
-          />
+      <PayoutBalanceCard
+        available={`PKR ${balance.available.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        minimum={`PKR ${balance.minimumAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        autoPayoutEnabled={balance.autoPayout}
+        autoPayoutFrequency={balance.frequency}
+      />
 
-          <BankAccountCard
-            bankAccount={bankAccount}
-            onEdit={() => setIsEditBankModalOpen(true)}
-          />
-        </>
-      )}
+      <BankAccountCard
+        bankAccount={bankAccount}
+        onEdit={() => setIsEditBankModalOpen(true)}
+      />
 
-      <EarningsOverviewChart data={EARNINGS_CHART_DATA} />
+      <EarningsOverviewChart data={chartData} />
 
-      {!isAdminStore && (
-        <>
-          <PayoutHistoryTable
-            payouts={payouts}
-            onViewDetails={(item) => navigate(getRoute(`/finance/payouts/${item.id}`))}
-          />
+      <PayoutHistoryTable
+        payouts={payouts}
+        onViewDetails={(item) =>
+          navigate(getRoute(`/finance/payouts/${item.cleanId || item.id}`))
+        }
+      />
 
-          <RequestPayoutModal
-            isOpen={isRequestModalOpen}
-            availableBalance={balance.available}
-            bankAccount={bankAccount}
-            onClose={() => setIsRequestModalOpen(false)}
-            onSubmitPayout={handleRequestPayout}
-          />
+      <RequestPayoutModal
+        isOpen={isRequestModalOpen}
+        availableBalance={balance.available}
+        bankAccount={bankAccount}
+        onClose={() => setIsRequestModalOpen(false)}
+        onSubmitPayout={handleRequestPayout}
+      />
 
-          <EditBankAccountModal
-            isOpen={isEditBankModalOpen}
-            bankAccount={bankAccount}
-            onClose={() => setIsEditBankModalOpen(false)}
-            onSave={handleSaveBank}
-          />
-        </>
-      )}
+      <EditBankAccountModal
+        isOpen={isEditBankModalOpen}
+        bankAccount={bankAccount}
+        onClose={() => setIsEditBankModalOpen(false)}
+        onSave={handleSaveBank}
+      />
     </div>
   );
 };

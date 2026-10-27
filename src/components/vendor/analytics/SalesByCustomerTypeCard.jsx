@@ -1,7 +1,10 @@
 import { CUSTOMER_TYPE_DATA } from '@/mock/vendor/vendorAnalytics.mock';
 import DonutChart from './DonutChart';
 
-export const SalesByCustomerTypeCard = ({ data = CUSTOMER_TYPE_DATA }) => {
+export const SalesByCustomerTypeCard = ({
+  data = CUSTOMER_TYPE_DATA,
+  totalOrders = '0',
+}) => {
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
       <div className="mb-4">
@@ -11,8 +14,8 @@ export const SalesByCustomerTypeCard = ({ data = CUSTOMER_TYPE_DATA }) => {
       </div>
 
       <DonutChart
-        data={data}
-        centerPrimary="128"
+        data={data && data.length > 0 ? data : CUSTOMER_TYPE_DATA}
+        centerPrimary={String(totalOrders)}
         centerSecondary="TOTAL ORDERS"
       />
     </div>

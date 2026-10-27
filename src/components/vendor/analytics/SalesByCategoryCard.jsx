@@ -3,7 +3,10 @@ import { ChevronDownIcon } from '@/icons';
 import { CATEGORY_SALES_DATA } from '@/mock/vendor/vendorAnalytics.mock';
 import DonutChart from './DonutChart';
 
-export const SalesByCategoryCard = ({ data = CATEGORY_SALES_DATA }) => {
+export const SalesByCategoryCard = ({
+  data = CATEGORY_SALES_DATA,
+  totalSales = 'PKR 0',
+}) => {
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
 
   return (
@@ -23,9 +26,9 @@ export const SalesByCategoryCard = ({ data = CATEGORY_SALES_DATA }) => {
       </div>
 
       <DonutChart
-        data={data}
-        centerPrimary="$5,420"
-        centerSecondary="Total Sales"
+        data={data && data.length > 0 ? data : CATEGORY_SALES_DATA}
+        centerPrimary={totalSales}
+        centerSecondary="CATEGORY SALES"
       />
     </div>
   );

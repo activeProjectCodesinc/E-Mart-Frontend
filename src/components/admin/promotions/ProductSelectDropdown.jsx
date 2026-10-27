@@ -1,35 +1,52 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { PlusIcon, SearchIcon, CheckIcon } from '@/icons';
-import { AVAILABLE_PRODUCTS_CATALOG } from '@/mock/admin/promotions.mock';
 import { useAdminProducts } from '@/hooks/useAdminProducts';
 
-export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct, productsList = null }) => {
+export const ProductSelectDropdown = ({
+  selectedProductIds = [],
+  onToggleProduct,
+  productsList = null,
+  isLoading: propIsLoading = false,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
 
-  const { products: apiProducts } = useAdminProducts({ pageSize: 100 });
+  const { products: apiProducts, isLoading: hookIsLoading } = useAdminProducts({ pageSize: 100 });
+  const isLoading = propIsLoading || (productsList === null && hookIsLoading);
 
   const catalog = useMemo(() => {
-    if (productsList && productsList.length > 0) return productsList;
-    if (apiProducts && apiProducts.length > 0) {
-      const normalizedApi = apiProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category?.name || p.category || 'General',
-        price: `PKR ${Number(p.price || p.basePrice || 0).toLocaleString()}`,
-        image:
+    if (productsList && Array.isArray(productsList)) return productsList;
+    if (apiProducts && Array.isArray(apiProducts) && apiProducts.length > 0) {
+      return apiProducts.map((p) => {
+        const catName =
+          typeof p.category === 'object' && p.category !== null
+            ? p.category?.name || 'General'
+            : p.category || 'General';
+
+        const priceNum = Number(p.price ?? p.basePrice ?? 0);
+        const formattedPrice = `PKR ${priceNum.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })}`;
+
+        const imgUrl =
+          (Array.isArray(p.images) &&
+            (p.images.find((img) => img.isMain)?.url || p.images[0]?.url)) ||
           p.imageUrl ||
           p.image ||
-          p.images?.[0]?.url ||
-          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
-      }));
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60';
 
-      const ids = new Set(normalizedApi.map((p) => p.id));
-      const remainingMock = AVAILABLE_PRODUCTS_CATALOG.filter((p) => !ids.has(p.id));
-      return [...normalizedApi, ...remainingMock];
+        return {
+          id: p.id,
+          name: p.name,
+          category: catName,
+          price: formattedPrice,
+          image: imgUrl,
+        };
+      });
     }
-    return AVAILABLE_PRODUCTS_CATALOG;
+    return [];
   }, [apiProducts, productsList]);
 
   // Close when clicking outside
@@ -83,7 +100,12 @@ export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct, pro
 
           {/* Products List */}
           <div className="max-h-56 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
-            {filteredProducts.length > 0 ? (
+            {isLoading ? (
+              <div className="py-6 flex flex-col items-center justify-center gap-2 text-slate-400">
+                <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs">Loading store products...</span>
+              </div>
+            ) : filteredProducts.length > 0 ? (
               filteredProducts.map((product) => {
                 const isSelected = selectedProductIds.includes(product.id);
                 return (
@@ -128,7 +150,9 @@ export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct, pro
                 );
               })
             ) : (
-              <p className="py-4 text-center text-xs text-slate-400">No products found</p>
+              <p className="py-6 text-center text-xs text-slate-400">
+                {search.trim() ? `No products match "${search}"` : 'No store products found'}
+              </p>
             )}
           </div>
         </div>

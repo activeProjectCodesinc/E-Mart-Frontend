@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import {
   TrendingUpIcon,
@@ -6,20 +7,20 @@ import {
   ClockIcon,
 } from '@/icons';
 
-const METRIC_CARDS = [
+const DEFAULT_METRIC_CARDS = [
   {
     key: 'totalSales',
     title: 'Total Sales',
-    value: '$5,420.00',
+    value: 'PKR 0.00',
     icon: TrendingUpIcon,
     iconBg: 'bg-sky-50 text-sky-500 border-sky-100',
-    badgeText: '↑ 12% from last month',
-    badgeColor: 'text-emerald-600',
+    badgeText: '0 delivered orders',
+    badgeColor: 'text-slate-500',
   },
   {
     key: 'commissionFee',
     title: 'Commission Fee',
-    value: '$542.00',
+    value: 'PKR 0.00',
     icon: BadgePercentIcon,
     iconBg: 'bg-amber-50 text-amber-500 border-amber-100',
     badgeText: '10% of sales',
@@ -28,19 +29,19 @@ const METRIC_CARDS = [
   {
     key: 'netEarnings',
     title: 'Net Earnings',
-    value: '$4,878.00',
+    value: 'PKR 0.00',
     icon: WalletIcon,
     iconBg: 'bg-emerald-50 text-emerald-500 border-emerald-100',
-    badgeText: '↑ 15% from last month',
+    badgeText: 'Earnings after platform commission',
     badgeColor: 'text-emerald-600',
   },
   {
     key: 'pendingPayout',
     title: 'Pending Payout',
-    value: '$1,250.00',
+    value: 'PKR 0.00',
     icon: ClockIcon,
     iconBg: 'bg-rose-50 text-rose-500 border-rose-100',
-    badgeText: 'Next payout: Sep 30',
+    badgeText: 'Next payout cycle',
     badgeColor: 'text-slate-500',
   },
 ];
@@ -78,10 +79,62 @@ const FinanceMetricCardItem = ({ card }) => {
   );
 };
 
-export const FinanceMetricsGrid = ({ metrics = METRIC_CARDS }) => {
+export const FinanceMetricsGrid = ({ metrics = null }) => {
+  const cards = useMemo(() => {
+    if (Array.isArray(metrics)) return metrics;
+    if (metrics && typeof metrics === 'object') {
+      const formatPKR = (v) =>
+        `PKR ${Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      return [
+        {
+          key: 'totalSales',
+          title: metrics.totalSales?.label || 'Total Sales',
+          value: formatPKR(metrics.totalSales?.value ?? metrics.totalSales?.raw),
+          icon: TrendingUpIcon,
+          iconBg: 'bg-sky-50 text-sky-500 border-sky-100',
+          badgeText:
+            metrics.totalSales?.subtitle ||
+            `${metrics.totalSales?.change != null ? (metrics.totalSales.change >= 0 ? '+' : '') + metrics.totalSales.change + '% ' : ''}delivered orders`,
+          badgeColor: (metrics.totalSales?.change ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600',
+        },
+        {
+          key: 'commissionFee',
+          title: metrics.commissionFee?.label || 'Commission Fee',
+          value: formatPKR(metrics.commissionFee?.value ?? metrics.commissionFee?.raw),
+          icon: BadgePercentIcon,
+          iconBg: 'bg-amber-50 text-amber-500 border-amber-100',
+          badgeText: metrics.commissionFee?.subtitle || `${metrics.commissionFee?.rate || '10%'} of sales`,
+          badgeColor: 'text-slate-500',
+        },
+        {
+          key: 'netEarnings',
+          title: metrics.netEarnings?.label || 'Net Earnings',
+          value: formatPKR(metrics.netEarnings?.value ?? metrics.netEarnings?.raw),
+          icon: WalletIcon,
+          iconBg: 'bg-emerald-50 text-emerald-500 border-emerald-100',
+          badgeText:
+            metrics.netEarnings?.subtitle ||
+            `${metrics.netEarnings?.change != null ? (metrics.netEarnings.change >= 0 ? '+' : '') + metrics.netEarnings.change + '% ' : ''}after commission`,
+          badgeColor: (metrics.netEarnings?.change ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600',
+        },
+        {
+          key: 'pendingPayout',
+          title: metrics.pendingPayout?.label || 'Pending Payout',
+          value: formatPKR(metrics.pendingPayout?.value ?? metrics.pendingPayout?.raw),
+          icon: ClockIcon,
+          iconBg: 'bg-rose-50 text-rose-500 border-rose-100',
+          badgeText: metrics.pendingPayout?.subtitle || 'Next payout cycle',
+          badgeColor: 'text-slate-500',
+        },
+      ];
+    }
+    return DEFAULT_METRIC_CARDS;
+  }, [metrics]);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-      {metrics.map((card) => (
+      {cards.map((card) => (
         <FinanceMetricCardItem key={card.key} card={card} />
       ))}
     </div>

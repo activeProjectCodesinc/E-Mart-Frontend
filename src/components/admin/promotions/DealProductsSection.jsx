@@ -5,36 +5,70 @@ import { AVAILABLE_PRODUCTS_CATALOG } from '@/mock/admin/promotions.mock';
 import { useAdminProducts } from '@/hooks/useAdminProducts';
 
 export const DealProductsSection = ({
-  selectedProductIds,
+  selectedProductIds = [],
   onToggleProduct,
   onRemoveProduct,
 }) => {
-  const { products: apiProducts } = useAdminProducts({ pageSize: 100 });
+  const { products: apiProducts, isLoading } = useAdminProducts({ pageSize: 100 });
 
   const catalog = useMemo(() => {
-    if (apiProducts && apiProducts.length > 0) {
-      const normalizedApi = apiProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: p.category?.name || p.category || 'General',
-        price: `PKR ${Number(p.price || p.basePrice || 0).toLocaleString()}`,
-        image:
+    if (apiProducts && Array.isArray(apiProducts) && apiProducts.length > 0) {
+      return apiProducts.map((p) => {
+        const catName =
+          typeof p.category === 'object' && p.category !== null
+            ? p.category?.name || 'General'
+            : p.category || 'General';
+
+        const priceNum = Number(p.price ?? p.basePrice ?? 0);
+        const formattedPrice = `PKR ${priceNum.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })}`;
+
+        const imgUrl =
+          (Array.isArray(p.images) &&
+            (p.images.find((img) => img.isMain)?.url || p.images[0]?.url)) ||
           p.imageUrl ||
           p.image ||
-          p.images?.[0]?.url ||
-          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
-      }));
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60';
 
-      const ids = new Set(normalizedApi.map((p) => p.id));
-      const remainingMock = AVAILABLE_PRODUCTS_CATALOG.filter((p) => !ids.has(p.id));
-      return [...normalizedApi, ...remainingMock];
+        return {
+          id: p.id,
+          name: p.name,
+          category: catName,
+          price: formattedPrice,
+          image: imgUrl,
+        };
+      });
     }
-    return AVAILABLE_PRODUCTS_CATALOG;
+    return [];
   }, [apiProducts]);
 
-  const selectedProducts = catalog.filter((p) =>
-    selectedProductIds.includes(p.id)
-  );
+  const selectedProducts = useMemo(() => {
+    return selectedProductIds.map((id) => {
+      const found = catalog.find((p) => p.id === id);
+      if (found) return found;
+      // Fallback for pre-existing mock deals in initial state
+      const mockFound = AVAILABLE_PRODUCTS_CATALOG.find((m) => m.id === id);
+      if (mockFound) {
+        return {
+          id: mockFound.id,
+          name: mockFound.name,
+          category: mockFound.category,
+          price: mockFound.price,
+          image: mockFound.image,
+        };
+      }
+      return {
+        id,
+        name: `Product (${id})`,
+        category: 'General',
+        price: 'PKR 0',
+        image:
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
+      };
+    });
+  }, [selectedProductIds, catalog]);
 
   return (
     <div className="pt-2 border-t border-slate-100">
@@ -53,6 +87,7 @@ export const DealProductsSection = ({
           selectedProductIds={selectedProductIds}
           onToggleProduct={onToggleProduct}
           productsList={catalog}
+          isLoading={isLoading}
         />
       </div>
 

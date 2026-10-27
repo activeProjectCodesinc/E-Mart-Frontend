@@ -2,8 +2,8 @@ import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { CreditCardIcon } from '@/icons';
 
 export const PayoutBannerCard = ({
-  amount = '$1,250.00',
-  nextDate = 'Sep 30, 2025',
+  amount = 'PKR 0.00',
+  nextDate = 'Next Cycle',
   onRequestPayout,
 }) => {
   const [iconRef, trigger] = useAnimatedIcon();
@@ -20,13 +20,13 @@ export const PayoutBannerCard = ({
         </div>
         <div>
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Payout
+            Available Payout
           </span>
           <p className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
             {amount}
           </p>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            {nextDate}
+            Next cycle: {nextDate}
           </p>
         </div>
       </div>
@@ -40,7 +40,7 @@ export const PayoutBannerCard = ({
           Request New Payout
         </button>
         <span className="text-[11px] text-slate-400 font-medium">
-          Available if balance is more than $500
+          Available if balance is at least PKR 500.00
         </span>
       </div>
     </div>

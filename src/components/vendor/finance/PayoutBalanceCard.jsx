@@ -1,8 +1,8 @@
 export const PayoutBalanceCard = ({
-  available = '$1,250.00',
-  minimum = '$100.00',
+  available = 'PKR 0.00',
+  minimum = 'PKR 500.00',
   autoPayoutEnabled = true,
-  autoPayoutFrequency = 'Every 7 days',
+  autoPayoutFrequency = 'Monthly',
 }) => {
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">

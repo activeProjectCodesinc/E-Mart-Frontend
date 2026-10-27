@@ -5,12 +5,13 @@ import RequestPayoutMethodCard from './RequestPayoutMethodCard';
 
 export const RequestPayoutModal = ({
   isOpen,
-  availableBalance = 1250.0,
+  availableBalance = 540.0,
   bankAccount,
   onClose,
   onSubmitPayout,
 }) => {
-  const [amount, setAmount] = useState(1000);
+  const [amount, setAmount] = useState(500);
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
@@ -28,8 +29,8 @@ export const RequestPayoutModal = ({
   const handleChangeAmount = (e) => {
     const val = parseFloat(e.target.value) || 0;
     setAmount(val);
-    if (val < 100) {
-      setError('Minimum payout amount is $100.');
+    if (val < 500) {
+      setError('Minimum payout amount is PKR 500.00.');
     } else if (val > availableBalance) {
       setError('Amount exceeds available balance.');
     } else {
@@ -39,15 +40,15 @@ export const RequestPayoutModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (amount < 100) {
-      setError('Minimum payout amount is $100.');
+    if (amount < 500) {
+      setError('Minimum payout amount is PKR 500.00.');
       return;
     }
     if (amount > availableBalance) {
       setError('Amount exceeds available balance.');
       return;
     }
-    onSubmitPayout(amount);
+    onSubmitPayout(amount, notes);
   };
 
   return (
@@ -63,7 +64,7 @@ export const RequestPayoutModal = ({
                 Request Payout
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Enter the amount you want to transfer to your bank account.
+                Enter the amount you want to withdraw to your store bank account.
               </p>
             </div>
           </div>
@@ -76,7 +77,7 @@ export const RequestPayoutModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/60 flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20">
               <WalletIcon size={20} />
@@ -86,19 +87,19 @@ export const RequestPayoutModal = ({
                 Available Balance
               </span>
               <p className="text-xl sm:text-2xl font-semibold text-slate-900">
-                ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                PKR {Number(availableBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Payout Amount
+              Payout Amount (PKR)
             </label>
             <div className="relative">
               <input
                 type="number"
-                min="100"
+                min="500"
                 max={availableBalance}
                 step="0.01"
                 required
@@ -107,11 +108,11 @@ export const RequestPayoutModal = ({
                 className="w-full pl-4 pr-16 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 pointer-events-none">
-                USD
+                PKR
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-medium mt-1">
-              Minimum payout amount is $100.
+              Minimum withdrawal amount is PKR 500.00.
             </p>
             {error && (
               <p className="text-xs text-rose-500 font-semibold mt-1">
@@ -126,6 +127,19 @@ export const RequestPayoutModal = ({
             onSelectPreset={handleSelectPreset}
             onSelectMax={handleSelectMax}
           />
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Withdrawal Notes (Optional)
+            </label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Monthly earnings withdrawal"
+              className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+            />
+          </div>
 
           <RequestPayoutMethodCard bankAccount={bankAccount} />
 

@@ -4,7 +4,7 @@ export const RequestPayoutPresets = ({
   onSelectPreset,
   onSelectMax,
 }) => {
-  const PRESET_AMOUNTS = [100, 500, 1000];
+  const PRESET_AMOUNTS = [500, 1000, 2500];
 
   return (
     <div className="grid grid-cols-4 gap-2">
@@ -21,7 +21,7 @@ export const RequestPayoutPresets = ({
                 : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-white'
             }`}
           >
-            ${val}
+            PKR {val}
           </button>
         );
       })}
@@ -34,7 +34,7 @@ export const RequestPayoutPresets = ({
             : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-white'
         }`}
       >
-        Max (${Math.floor(availableBalance)})
+        Max (PKR {Math.floor(availableBalance)})
       </button>
     </div>
   );

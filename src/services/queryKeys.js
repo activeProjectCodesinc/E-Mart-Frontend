@@ -48,6 +48,16 @@ export const QUERY_KEYS = {
           DETAIL: (id) => ['admin', 'store', 'promotions', 'banners', 'detail', id],
         },
       },
+      FINANCE: {
+        ALL: ['admin', 'store', 'finance'],
+        OVERVIEW: (params = {}) => ['admin', 'store', 'finance', 'overview', params],
+        PAYOUTS: (params = {}) => ['admin', 'store', 'finance', 'payouts', params],
+        PAYOUT_DETAIL: (id) => ['admin', 'store', 'finance', 'payouts', id],
+      },
+      ANALYTICS: {
+        ALL: ['admin', 'store', 'analytics'],
+        OVERVIEW: (params = {}) => ['admin', 'store', 'analytics', 'overview', params],
+      },
     },
   },
   CATEGORIES: {

@@ -20,7 +20,7 @@ export const PayoutReferenceCard = ({ payout }) => {
           Amount Transferred
         </span>
         <p className="text-2xl sm:text-3xl font-semibold text-slate-900 mt-0.5">
-          ${payout?.amount?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '1,120.00'}
+          PKR {Number(payout?.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
       </div>
 

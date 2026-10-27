@@ -7,6 +7,9 @@ import PayoutReferenceCard from '@/components/vendor/finance/details/PayoutRefer
 import PayoutBreakdownCard from '@/components/vendor/finance/details/PayoutBreakdownCard';
 import TransactionTimelineCard from '@/components/vendor/finance/details/TransactionTimelineCard';
 import PayoutHelpCard from '@/components/vendor/finance/details/PayoutHelpCard';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { apiRoutes } from '@/services/apiRoutes';
+import { QUERY_KEYS } from '@/services/queryKeys';
 import { toast } from '@/utils/toast';
 
 export const VendorPayoutDetailsPage = () => {
@@ -14,9 +17,29 @@ export const VendorPayoutDetailsPage = () => {
   const navigate = useNavigate();
   const { getRoute } = usePortalBase();
 
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.FINANCE?.PAYOUT_DETAIL(id) || [
+    'admin',
+    'store',
+    'finance',
+    'payouts',
+    id,
+  ];
+  const payoutUrl = apiRoutes.admin?.store?.finance?.payoutDetail
+    ? apiRoutes.admin.store.finance.payoutDetail(id)
+    : `/admin/store/finance/payouts/${id}`;
+
+  const { data: response } = useApiQuery(queryKey, payoutUrl, {
+    enabled: Boolean(id),
+  });
+
   const payout = useMemo(() => {
-    return PAYOUT_HISTORY.find((item) => item.id === id) || PAYOUT_HISTORY[0];
-  }, [id]);
+    if (response?.data?.payout) return response.data.payout;
+    if (response?.data) return response.data;
+    return (
+      PAYOUT_HISTORY.find((item) => item.id === id || item.cleanId === id) ||
+      PAYOUT_HISTORY[0]
+    );
+  }, [response, id]);
 
   const handleDownloadReceipt = () => {
     toast.success(`Downloading receipt for payout ${payout.id}...`);
@@ -37,13 +60,20 @@ export const VendorPayoutDetailsPage = () => {
         <div className="lg:col-span-2 space-y-4 sm:space-y-5">
           <PayoutReferenceCard payout={payout} />
           <PayoutBreakdownCard
-            breakdown={payout.breakdown}
+            breakdown={payout.breakdown || [
+              { description: 'Payout Request', orderId: '—', amount: payout.amount, type: 'credit' },
+              { description: 'Transfer Fee', orderId: '—', amount: 0, type: 'fee' },
+            ]}
             total={payout.amount}
           />
         </div>
 
         <div className="lg:col-span-1 space-y-4 sm:space-y-5">
-          <TransactionTimelineCard timeline={payout.timeline} />
+          <TransactionTimelineCard timeline={payout.timeline || [
+            { step: 'Initiated', time: payout.date || 'Today', completed: true },
+            { step: 'Processing', time: payout.status === 'Processing' ? 'In Progress' : 'Completed', completed: payout.status !== 'Initiated' },
+            { step: 'Completed', time: payout.status === 'Completed' ? 'Completed' : 'Pending', completed: payout.status === 'Completed' },
+          ]} />
           <PayoutHelpCard onContactSupport={handleContactSupport} />
         </div>
       </div>

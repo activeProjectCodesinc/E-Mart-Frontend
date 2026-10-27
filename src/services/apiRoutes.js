@@ -72,6 +72,16 @@ export const apiRoutes = {
         products: '/admin/store/pos/products',
         order: '/admin/store/pos/order',
       },
+      finance: {
+        base: '/admin/store/finance',
+        bankAccount: '/admin/store/finance/bank-account',
+        payouts: '/admin/store/finance/payouts',
+        payoutDetail: (id) => `/admin/store/finance/payouts/${id}`,
+      },
+      analytics: {
+        base: '/admin/store/analytics',
+        export: '/admin/store/analytics/export',
+      },
     },
     customers: {
       base: '/admin/customers',
