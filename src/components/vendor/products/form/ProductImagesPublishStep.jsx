@@ -8,6 +8,7 @@ export const ProductImagesPublishStep = ({
   onChange,
   onPublish,
   onBack,
+  isSubmitting = false,
 }) => {
   return (
     <div className="space-y-6">
@@ -19,6 +20,7 @@ export const ProductImagesPublishStep = ({
         <button
           type="button"
           onClick={onBack}
+          disabled={isSubmitting}
           className="inline-flex items-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
         >
           <ArrowLeftIcon size={14} />
@@ -27,10 +29,11 @@ export const ProductImagesPublishStep = ({
 
         <button
           type="button"
+          disabled={isSubmitting}
           onClick={onPublish}
-          className="px-7 py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl shadow-md shadow-orange-500/20 active:scale-98 transition-all cursor-pointer"
+          className="px-7 py-2.5 text-xs sm:text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-orange-500/20 active:scale-98 transition-all cursor-pointer"
         >
-          Publish Product
+          {isSubmitting ? 'Publishing & Uploading...' : 'Publish Product'}
         </button>
       </div>
     </div>

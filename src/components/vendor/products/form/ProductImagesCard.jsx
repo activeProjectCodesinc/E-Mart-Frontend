@@ -17,6 +17,7 @@ export const ProductImagesCard = ({ formData, onChange }) => {
 
     const newImageUrls = validImageFiles.map((file) => URL.createObjectURL(file));
     onChange('images', [...(formData.images || []), ...newImageUrls]);
+    onChange('imageFiles', [...(formData.imageFiles || []), ...validImageFiles]);
   };
 
   const handleFileChange = (e) => {
@@ -48,6 +49,10 @@ export const ProductImagesCard = ({ formData, onChange }) => {
     onChange(
       'images',
       (formData.images || []).filter((_, idx) => idx !== indexToRemove)
+    );
+    onChange(
+      'imageFiles',
+      (formData.imageFiles || []).filter((_, idx) => idx !== indexToRemove)
     );
   };
 
@@ -85,7 +90,7 @@ export const ProductImagesCard = ({ formData, onChange }) => {
           <span className="text-orange-600 underline font-bold">click to browse</span>
         </p>
         <p className="text-[11px] text-slate-400 mt-1">
-          Supports: JPG, PNG, WebP (Max 5MB each)
+          Supports: JPG, PNG, WebP (Min 300×300px, Max 5MB each)
         </p>
       </div>
 
