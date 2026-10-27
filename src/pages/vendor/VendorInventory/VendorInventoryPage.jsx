@@ -40,6 +40,8 @@ export const VendorInventoryPage = () => {
         const derivedStatus =
           typeof item.status === 'string'
             ? item.status
+            : typeof item.status === 'object' && item.status !== null
+            ? (item.status.name || item.status.title || 'In Stock')
             : stockNum === 0
             ? 'Out of Stock'
             : stockNum <= lowAlert
@@ -50,22 +52,36 @@ export const VendorInventoryPage = () => {
         const unitStr =
           typeof item.unit === 'object' && item.unit !== null
             ? (item.unit.name || item.unit.symbol || item.unit.code || '1 unit')
-            : (item.unit || '1 unit');
+            : (typeof item.unit === 'string' ? item.unit : '1 unit');
 
         const categoryStr =
           typeof item.category === 'object' && item.category !== null
             ? (item.category.name || item.category.title || 'General')
-            : (item.category || 'General');
+            : (typeof item.category === 'string' ? item.category : 'General');
 
         const nameStr =
           typeof item.name === 'object' && item.name !== null
             ? (item.name.name || item.name.title || 'Product')
-            : (item.name || 'Product');
+            : (typeof item.name === 'string' ? item.name : 'Product');
 
         const skuStr =
           typeof item.sku === 'object' && item.sku !== null
             ? (item.sku.code || item.sku.name || 'N/A')
-            : (item.sku || item.productCode || 'N/A');
+            : (typeof item.sku === 'string' ? item.sku : (item.productCode || 'N/A'));
+
+        const lastAddedStr =
+          typeof item.lastAdded === 'string'
+            ? item.lastAdded
+            : item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString()
+            : 'N/A';
+
+        const lastUpdatedStr =
+          typeof item.lastUpdated === 'string'
+            ? item.lastUpdated
+            : item.updatedAt
+            ? new Date(item.updatedAt).toLocaleDateString()
+            : 'N/A';
 
         return {
           ...item,
@@ -81,8 +97,8 @@ export const VendorInventoryPage = () => {
           category: categoryStr,
           price: Number(item.price ?? item.sellingPrice ?? item.salePrice ?? 0),
           costPrice: Number(item.costPrice ?? item.cost ?? item.purchasePrice ?? item.price ?? 0),
-          lastAdded: item.lastAdded || (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'),
-          lastUpdated: item.lastUpdated || (item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'N/A'),
+          lastAdded: lastAddedStr,
+          lastUpdated: lastUpdatedStr,
         };
       });
     }

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import toast from '@/utils/toast';
 import baseURL from './apiBaseURL';
+import { apiRoutes } from './apiRoutes';
 import {
   getAccessToken,
   setAccessToken,

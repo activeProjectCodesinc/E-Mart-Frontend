@@ -92,14 +92,14 @@ export const InventoryTable = ({
                     <td className="py-3.5 px-3 sm:px-4">
                       <span
                         className={`font-black ${
-                          item.stock === 0
+                          Number(item.stock ?? 0) === 0
                             ? 'text-rose-600'
-                            : item.stock <= item.lowStockAlert
+                            : Number(item.stock ?? 0) <= Number(item.lowStockAlert ?? 10)
                             ? 'text-orange-600'
                             : 'text-slate-700'
                         }`}
                       >
-                        {item.stock}
+                        {renderText(item.stock, 0)}
                       </span>
                     </td>
 

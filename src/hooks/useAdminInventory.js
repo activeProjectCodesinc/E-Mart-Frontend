@@ -11,8 +11,15 @@ export const useAdminInventory = (filters = {}) => {
     { params: filters }
   );
 
+  const rawData = query.data?.data;
+  const inventoryList =
+    rawData?.inventory ||
+    rawData?.products ||
+    rawData?.items ||
+    (Array.isArray(rawData) ? rawData : []);
+
   return {
-    inventory: query.data?.data?.inventory || query.data?.data?.products || [],
+    inventory: inventoryList,
     meta: query.data?.meta || {},
     isLoading: query.isLoading,
     isError: query.isError,

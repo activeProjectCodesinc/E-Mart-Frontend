@@ -5,13 +5,24 @@ export const InventoryDetailsCard = ({ product }) => {
 
   const stock = Number(product.stock ?? 0);
   const lowStockAlert = Number(product.lowStockAlert ?? 0);
-  const unit = product.unit || 'unit';
+  const unit =
+    typeof product.unit === 'object' && product.unit !== null
+      ? (product.unit.name || product.unit.symbol || product.unit.title || product.unit.code || 'unit')
+      : (typeof product.unit === 'string' ? product.unit : 'unit');
   const price = typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0;
   const costPrice =
     typeof product.costPrice === 'number'
       ? product.costPrice
       : parseFloat(product.costPrice) || (typeof product.cost === 'number' ? product.cost : parseFloat(product.cost) || price);
   const totalStockValue = stock * costPrice;
+  const lastAdded =
+    typeof product.lastAdded === 'object' && product.lastAdded !== null
+      ? (product.lastAdded.name || product.lastAdded.date || 'N/A')
+      : (typeof product.lastAdded === 'string' ? product.lastAdded : 'N/A');
+  const lastUpdated =
+    typeof product.lastUpdated === 'object' && product.lastUpdated !== null
+      ? (product.lastUpdated.name || product.lastUpdated.date || 'N/A')
+      : (typeof product.lastUpdated === 'string' ? product.lastUpdated : 'N/A');
 
   return (
     <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3.5">
@@ -53,11 +64,11 @@ export const InventoryDetailsCard = ({ product }) => {
         </div>
         <div className="flex items-center justify-between py-2">
           <span className="text-slate-500">Last Stock Added</span>
-          <span className="text-slate-700">{product.lastAdded || 'N/A'}</span>
+          <span className="text-slate-700">{lastAdded}</span>
         </div>
         <div className="flex items-center justify-between py-2">
           <span className="text-slate-500">Last Updated</span>
-          <span className="text-slate-700">{product.lastUpdated || 'N/A'}</span>
+          <span className="text-slate-700">{lastUpdated}</span>
         </div>
       </div>
     </div>

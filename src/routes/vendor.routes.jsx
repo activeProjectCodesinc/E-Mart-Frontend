@@ -1,8 +1,6 @@
 import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 
-const VendorLoginPage = lazy(() => import('@/pages/vendor/VendorLogin/VendorLoginPage'));
-const VendorRegisterPage = lazy(() => import('@/pages/vendor/VendorRegister/VendorRegisterPage'));
 const VendorLayout = lazy(() => import('@/layouts/VendorLayout'));
 const VendorOverviewPage = lazy(() => import('@/pages/vendor/VendorOverview/VendorOverviewPage'));
 const VendorOrdersPage = lazy(() => import('@/pages/vendor/VendorOrders/VendorOrdersPage'));
