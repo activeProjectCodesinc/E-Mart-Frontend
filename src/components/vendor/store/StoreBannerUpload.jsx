@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { CameraIcon, UploadIcon } from '@/icons';
 import { useSettings } from '@/hooks/useSettings';
+import storeBannerImg from '@/assets/images/storeBanner.jpg';
 
 export const StoreBannerUpload = ({ bannerUrl, onBannerChange }) => {
   const fileInputRef = useRef(null);
@@ -43,7 +44,7 @@ export const StoreBannerUpload = ({ bannerUrl, onBannerChange }) => {
 
       <div className="relative w-full h-44 sm:h-52 md:h-60 rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 shadow-inner group">
         <img
-          src={bannerUrl}
+          src={bannerUrl || storeBannerImg}
           alt="Store Banner"
           className="w-full h-full object-cover object-center group-hover:scale-[1.01] transition-transform duration-500"
         />

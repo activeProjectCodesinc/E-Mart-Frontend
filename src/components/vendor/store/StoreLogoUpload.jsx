@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { CameraIcon } from '@/icons';
 import { useSettings } from '@/hooks/useSettings';
+import storeLogoImg from '@/assets/images/storeLogo.jpg';
 
 export const StoreLogoUpload = ({ logoUrl, onLogoChange }) => {
   const fileInputRef = useRef(null);
@@ -43,7 +44,7 @@ export const StoreLogoUpload = ({ logoUrl, onLogoChange }) => {
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border border-slate-200/90 bg-white p-2 shadow-xs flex items-center justify-center shrink-0 overflow-hidden relative">
           <img
-            src={logoUrl}
+            src={logoUrl || storeLogoImg}
             alt="Store Logo"
             className="w-full h-full object-contain rounded-xl"
           />
