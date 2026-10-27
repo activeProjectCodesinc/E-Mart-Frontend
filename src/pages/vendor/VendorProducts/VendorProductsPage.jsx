@@ -32,17 +32,30 @@ export const VendorProductsPage = () => {
 
   const productsList = useMemo(() => {
     if (apiProducts && Array.isArray(apiProducts)) {
-      return apiProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        category: typeof p.category === 'object' ? p.category?.name : (p.category || 'General'),
-        price: Number(p.price || 0),
-        stock: p.stock ?? 0,
-        status: p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1).replace('_', ' ') : 'Active',
-        image: p.imageUrl || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
-        productCode: p.productCode,
-        sku: p.sku,
-      }));
+      return apiProducts.map((p) => {
+        const rawStatus =
+          typeof p.status === 'object' && p.status !== null
+            ? p.status.name || p.status.title || 'active'
+            : p.status || 'active';
+        const formattedStatus =
+          rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).replace(/_/g, ' ');
+
+        return {
+          id: p.id,
+          name: p.name,
+          category: typeof p.category === 'object' ? p.category?.name : (p.category || 'General'),
+          price: Number(p.price || 0),
+          stock: p.stock ?? 0,
+          status: formattedStatus,
+          image:
+            (Array.isArray(p.images) && (p.images.find((img) => img.isMain)?.url || p.images[0]?.url)) ||
+            p.imageUrl ||
+            p.image ||
+            'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+          productCode: p.productCode,
+          sku: p.sku,
+        };
+      });
     }
     return INITIAL_PRODUCTS;
   }, [apiProducts]);

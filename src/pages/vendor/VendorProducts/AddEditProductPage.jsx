@@ -9,7 +9,7 @@ import ProductPricingInventoryStep from '@/components/vendor/products/form/Produ
 import ProductImagesPublishStep from '@/components/vendor/products/form/ProductImagesPublishStep';
 import UploadSuccessModal from '@/components/vendor/products/form/UploadSuccessModal';
 import UploadErrorModal from '@/components/vendor/products/form/UploadErrorModal';
-import { useCreateProduct, useUpdateProduct, useAdminProductDetail, useCategories, useUploadProductImages } from '@/hooks';
+import { useCreateProduct, useUpdateProduct, useAdminProductDetail, useCategories, useUploadProductImages, useDeleteProductImage } from '@/hooks';
 
 const DEFAULT_BLANK_PRODUCT = {
   name: '',
@@ -48,10 +48,17 @@ export const AddEditProductPage = () => {
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
   const { mutateAsync: uploadProductImages, isPending: isUploadingImages } = useUploadProductImages();
+  const { mutate: deleteProductImage } = useDeleteProductImage();
   const [formData, setFormData] = useState(DEFAULT_BLANK_PRODUCT);
 
   useEffect(() => {
     if (apiProduct) {
+      const existingImages = Array.isArray(apiProduct.images) && apiProduct.images.length > 0
+        ? apiProduct.images
+        : apiProduct.imageUrl
+        ? [{ id: 'main', url: apiProduct.imageUrl, isMain: true }]
+        : [];
+
       setFormData({
         ...DEFAULT_BLANK_PRODUCT,
         name: apiProduct.name || '',
@@ -65,7 +72,8 @@ export const AddEditProductPage = () => {
         price: apiProduct.price || '',
         stock: apiProduct.stock ?? '',
         lowStockAlert: String(apiProduct.lowStockAlert ?? '10'),
-        images: apiProduct.imageUrl ? [apiProduct.imageUrl] : (apiProduct.images || []),
+        images: existingImages,
+        imageFiles: [],
         status: apiProduct.status || 'Active',
       });
     }
@@ -116,9 +124,14 @@ export const AddEditProductPage = () => {
     };
 
     const uploadFilesForProduct = async (prodId) => {
-      if (prodId && formData.imageFiles && formData.imageFiles.length > 0) {
+      const filesToUpload =
+        (formData.images || []).filter((item) => item?.file).map((item) => item.file).length > 0
+          ? (formData.images || []).filter((item) => item?.file).map((item) => item.file)
+          : formData.imageFiles || [];
+
+      if (prodId && filesToUpload.length > 0) {
         const fd = new FormData();
-        formData.imageFiles.forEach((file) => fd.append('files', file));
+        filesToUpload.forEach((file) => fd.append('files', file));
         try {
           await uploadProductImages({ id: prodId, formData: fd });
         } catch (err) {
@@ -142,6 +155,12 @@ export const AddEditProductPage = () => {
           uploadFilesForProduct(newProductId);
         },
       });
+    }
+  };
+
+  const handleDeleteExistingImage = (imageId) => {
+    if (id && imageId) {
+      deleteProductImage({ id, imageId });
     }
   };
 
@@ -193,6 +212,7 @@ export const AddEditProductPage = () => {
           onChange={handleFieldChange}
           onPublish={handlePublish}
           onBack={() => setStep(2)}
+          onDeleteExistingImage={handleDeleteExistingImage}
           isSubmitting={isCreating || isUpdating || isUploadingImages}
         />
       )}

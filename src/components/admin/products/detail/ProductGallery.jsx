@@ -4,12 +4,18 @@ import { PlusIcon } from '@/icons';
 export const ProductGallery = ({ product }) => {
   const [selectedImage, setSelectedImage] = useState(0);
 
-  const images = [
-    product.image,
-    product.image,
-    product.image,
-    product.image,
-  ];
+  const getImgUrl = (item) => {
+    if (!item) return '';
+    if (typeof item === 'string') return item;
+    if (typeof item === 'object') return item.url || item.imageUrl || '';
+    return '';
+  };
+
+  const rawImages = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.map(getImgUrl).filter(Boolean)
+    : [product.image || product.imageUrl || 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600'];
+
+  const images = rawImages.length > 0 ? rawImages : ['https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600'];
 
   const tags = product.tags || ['fresh fruits', 'banana', 'organic', 'healthy food'];
 
