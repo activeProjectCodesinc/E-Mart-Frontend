@@ -30,7 +30,7 @@ export const VendorInventoryPage = () => {
   }, [currentPage, stockFilter, searchQuery]);
 
   const { inventory: apiInventory, meta, isLoading } = useAdminInventory(apiFilters);
-  const { mutate: adjustStock } = useAdjustStock();
+  const { mutate: adjustStock, isPending: isAdjusting } = useAdjustStock();
 
   const inventoryItems = useMemo(() => {
     if (apiInventory && Array.isArray(apiInventory) && apiInventory.length > 0) {
@@ -108,6 +108,11 @@ export const VendorInventoryPage = () => {
     return INITIAL_INVENTORY;
   }, [apiInventory]);
 
+  const activeProduct = useMemo(() => {
+    if (!activeStockProduct) return null;
+    return inventoryItems.find((i) => i.id === activeStockProduct.id) || activeStockProduct;
+  }, [activeStockProduct, inventoryItems]);
+
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
@@ -122,15 +127,27 @@ export const VendorInventoryPage = () => {
     }
   };
 
-  const handleUpdateStock = ({ productId, change, notes }) => {
+  const handleUpdateStock = ({ productId, variantId, type, quantity, note, change, notes }) => {
     const target = inventoryItems.find((i) => i.id === productId);
-    adjustStock({
-      variantId: target?.variantId || productId,
-      change,
-      reason: change >= 0 ? 'restock' : 'damaged',
-      notes: notes || undefined,
-    });
-    setActiveStockProduct(null);
+    const resolvedVariantId = variantId || target?.variantId || productId;
+    const resolvedType = type || (change >= 0 ? 'add' : 'reduce');
+    const resolvedQuantity = quantity || (change !== undefined ? Math.abs(change) : 0);
+    const resolvedNote = note || notes || undefined;
+
+    adjustStock(
+      {
+        variantId: resolvedVariantId,
+        productId,
+        type: resolvedType,
+        quantity: resolvedQuantity,
+        note: resolvedNote,
+      },
+      {
+        onSuccess: () => {
+          setActiveStockProduct(null);
+        },
+      }
+    );
   };
 
   const handleOpenCsvValidation = (file) => {
@@ -173,11 +190,12 @@ export const VendorInventoryPage = () => {
       />
 
       <StockUpdateModal
-        isOpen={Boolean(activeStockProduct)}
-        product={activeStockProduct}
+        isOpen={Boolean(activeProduct)}
+        product={activeProduct}
         onClose={() => setActiveStockProduct(null)}
         onUpdateStock={handleUpdateStock}
         onOpenCsvValidation={(file) => handleOpenCsvValidation(file)}
+        isSubmitting={isAdjusting}
       />
 
       <CsvValidationModal

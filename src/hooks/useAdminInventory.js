@@ -28,13 +28,20 @@ export const useAdminInventory = (filters = {}) => {
   };
 };
 
-export const useInventoryMovements = (variantId) => {
+export const useInventoryMovements = (filterOrId) => {
+  const params =
+    typeof filterOrId === 'object' && filterOrId !== null
+      ? filterOrId
+      : { productId: filterOrId };
+
+  const keyId = params.productId || params.variantId || 'all';
+
   const query = useApiQuery(
-    QUERY_KEYS.ADMIN.INVENTORY.MOVEMENTS(variantId),
-    variantId ? apiRoutes.admin.inventory.movements : null,
+    QUERY_KEYS.ADMIN.INVENTORY.MOVEMENTS(keyId),
+    Boolean(params.productId || params.variantId) ? apiRoutes.admin.inventory.movements : null,
     {
-      params: { variantId },
-      enabled: Boolean(variantId),
+      params,
+      enabled: Boolean(params.productId || params.variantId),
     }
   );
 

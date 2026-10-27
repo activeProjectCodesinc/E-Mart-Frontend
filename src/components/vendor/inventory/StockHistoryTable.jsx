@@ -6,7 +6,7 @@ const TYPE_PILLS = {
   'Stock Out': 'bg-rose-50 text-rose-600 border border-rose-200',
 };
 
-export const StockHistoryTable = ({ history = [] }) => {
+export const StockHistoryTable = ({ history = [], isLoading = false }) => {
   return (
     <div className="space-y-3 pt-2 border-t border-slate-100">
       <div className="flex items-center gap-2">
@@ -36,23 +36,51 @@ export const StockHistoryTable = ({ history = [] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {history.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50/50">
-                  <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{row.date}</td>
-                  <td className="py-2.5 px-3 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${TYPE_PILLS[row.type] || TYPE_PILLS['Stock In']}`}>
-                      {row.type}
-                    </span>
+              {isLoading ? (
+                [1, 2, 3].map((n) => (
+                  <tr key={n} className="animate-pulse">
+                    <td className="py-3 px-3"><div className="h-3 w-28 bg-slate-200 rounded" /></td>
+                    <td className="py-3 px-3"><div className="h-4 w-16 bg-slate-200 rounded-full" /></td>
+                    <td className="py-3 px-3"><div className="h-3 w-12 bg-slate-200 rounded" /></td>
+                    <td className="py-3 px-3"><div className="h-3 w-12 bg-slate-200 rounded" /></td>
+                    <td className="py-3 px-3"><div className="h-3 w-12 bg-slate-200 rounded" /></td>
+                    <td className="py-3 px-3"><div className="h-3 w-24 bg-slate-200 rounded" /></td>
+                    <td className="py-3 px-3"><div className="h-3 w-10 bg-slate-200 rounded" /></td>
+                  </tr>
+                ))
+              ) : history.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
+                    No stock movements recorded yet.
                   </td>
-                  <td className={`py-2.5 px-3 font-bold whitespace-nowrap ${row.quantity.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {row.quantity}
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-600">{row.prevStock}</td>
-                  <td className="py-2.5 px-3 font-bold text-slate-800">{row.newStock}</td>
-                  <td className="py-2.5 px-3 text-slate-500 max-w-[150px] truncate">{row.notes}</td>
-                  <td className="py-2.5 px-3 text-slate-600">{row.addedBy}</td>
                 </tr>
-              ))}
+              ) : (
+                history.map((row) => {
+                  const isPositive =
+                    typeof row.quantity === 'string'
+                      ? row.quantity.startsWith('+')
+                      : Number(row.quantity) > 0;
+                  return (
+                    <tr key={row.id} className="hover:bg-slate-50/50">
+                      <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">{row.date}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${TYPE_PILLS[row.type] || TYPE_PILLS['Stock In']}`}>
+                          {row.type}
+                        </span>
+                      </td>
+                      <td className={`py-2.5 px-3 font-bold whitespace-nowrap ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {row.quantity}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600">{row.prevStock}</td>
+                      <td className="py-2.5 px-3 font-bold text-slate-800">{row.newStock}</td>
+                      <td className="py-2.5 px-3 text-slate-500 max-w-[150px] truncate" title={row.notes}>
+                        {row.notes}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600">{row.addedBy}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

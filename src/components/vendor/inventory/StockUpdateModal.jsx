@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { XIcon } from '@/icons';
-import { DEFAULT_STOCK_HISTORY } from '@/mock/vendor/vendorInventory.mock';
+import { useInventoryMovements } from '@/hooks';
 import InventoryDetailsCard from './InventoryDetailsCard';
 import QuickStockUpdateCard from './QuickStockUpdateCard';
 import StockHistoryTable from './StockHistoryTable';
@@ -10,6 +11,7 @@ export const StockUpdateModal = ({
   onClose,
   onUpdateStock,
   onOpenCsvValidation,
+  isSubmitting = false,
 }) => {
   if (!isOpen || !product) return null;
 
@@ -17,6 +19,67 @@ export const StockUpdateModal = ({
   const catStr = typeof product.category === 'object' && product.category !== null ? (product.category.name || product.category.title || 'General') : (product.category || 'General');
   const nameStr = typeof product.name === 'object' && product.name !== null ? (product.name.name || product.name.title || 'Product') : (product.name || 'Product');
   const statusStr = typeof product.status === 'object' && product.status !== null ? (product.status.name || product.status.title || 'In Stock') : (product.status || 'In Stock');
+
+  const { movements, isLoading: isLoadingMovements } = useInventoryMovements({
+    productId: product.id,
+    variantId: product.variantId,
+  });
+
+  const formattedHistory = useMemo(() => {
+    if (!movements || !Array.isArray(movements) || movements.length === 0) return [];
+    return movements.map((m) => {
+      const isPositive = m.quantity > 0;
+      const typeLabel =
+        m.type === 'stock_in'
+          ? 'Stock In'
+          : m.type === 'stock_out'
+          ? 'Stock Out'
+          : 'Stock Adjustment';
+
+      const unit = m.stockUnit || unitStr || '';
+      const dateStr = m.createdAt
+        ? new Date(m.createdAt).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '-';
+
+      return {
+        id: m.id,
+        date: dateStr,
+        type: typeLabel,
+        quantity: `${isPositive ? '+' : ''}${m.quantity}${unit ? ` ${unit}` : ''}`,
+        prevStock: m.previousStock !== null && m.previousStock !== undefined ? `${m.previousStock} ${unit}` : '-',
+        newStock: m.newStock !== null && m.newStock !== undefined ? `${m.newStock} ${unit}` : '-',
+        notes: m.note || '-',
+        addedBy: m.addedBy?.isYou ? 'You' : (m.addedBy?.name || 'System'),
+      };
+    });
+  }, [movements, unitStr]);
+
+  const enrichedProduct = useMemo(() => {
+    if (!product) return product;
+    let lastAdded = product.lastAdded;
+    let lastUpdated = product.lastUpdated;
+    if (movements && movements.length > 0) {
+      const latest = movements[0];
+      if (latest?.createdAt) {
+        lastUpdated = new Date(latest.createdAt).toLocaleDateString();
+      }
+      const latestAdd = movements.find((m) => m.quantity > 0);
+      if (latestAdd?.createdAt) {
+        lastAdded = new Date(latestAdd.createdAt).toLocaleDateString();
+      }
+    }
+    return {
+      ...product,
+      lastAdded: lastAdded || product.lastAdded || 'N/A',
+      lastUpdated: lastUpdated || product.lastUpdated || 'N/A',
+    };
+  }, [product, movements]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
@@ -51,17 +114,18 @@ export const StockUpdateModal = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <InventoryDetailsCard product={product} />
+          <InventoryDetailsCard product={enrichedProduct} />
 
           <QuickStockUpdateCard
-            product={product}
+            product={enrichedProduct}
             onClose={onClose}
             onUpdateStock={onUpdateStock}
             onOpenCsvValidation={onOpenCsvValidation}
+            isSubmitting={isSubmitting}
           />
         </div>
 
-        <StockHistoryTable history={DEFAULT_STOCK_HISTORY} />
+        <StockHistoryTable history={formattedHistory} isLoading={isLoadingMovements} />
       </div>
     </div>
   );

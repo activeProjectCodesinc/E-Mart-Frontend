@@ -53,13 +53,13 @@ export const InventoryDetailsCard = ({ product }) => {
         <div className="flex items-center justify-between py-2">
           <span className="text-slate-500">Selling Price</span>
           <span className="font-bold text-slate-800">
-            ${price.toFixed(2)} per {unit}
+            PKR {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per {unit}
           </span>
         </div>
         <div className="flex items-center justify-between py-2">
           <span className="text-slate-500">Total Stock Value</span>
           <span className="font-bold text-slate-800">
-            ${(isNaN(totalStockValue) ? 0 : totalStockValue).toFixed(2)}
+            PKR {(isNaN(totalStockValue) ? 0 : totalStockValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
         <div className="flex items-center justify-between py-2">

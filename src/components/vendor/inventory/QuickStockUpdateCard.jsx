@@ -6,6 +6,7 @@ export const QuickStockUpdateCard = ({
   onClose,
   onUpdateStock,
   onOpenCsvValidation,
+  isSubmitting = false,
 }) => {
   const [mode, setMode] = useState('add');
   const [quantity, setQuantity] = useState('50');
@@ -14,12 +15,16 @@ export const QuickStockUpdateCard = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const qtyNum = parseInt(quantity, 10) || 0;
-    const finalChange = mode === 'add' ? qtyNum : -qtyNum;
+    const qtyNum = parseInt(quantity, 10);
+    if (!qtyNum || qtyNum <= 0) return;
     onUpdateStock({
       productId: product.id,
-      change: finalChange,
-      notes: notes.trim(),
+      variantId: product.variantId || product.variant_id || product.id,
+      type: mode,
+      quantity: qtyNum,
+      note: notes.trim() || undefined,
+      notes: notes.trim() || undefined,
+      change: mode === 'add' ? qtyNum : -qtyNum,
     });
   };
 
@@ -126,9 +131,12 @@ export const QuickStockUpdateCard = ({
           </button>
           <button
             type="submit"
-            className="px-5 py-2 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-xl shadow-md shadow-orange-500/20 active:scale-98 transition-all cursor-pointer"
+            disabled={isSubmitting || !quantity || parseInt(quantity, 10) <= 0}
+            className="px-5 py-2 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-orange-500/20 active:scale-98 transition-all cursor-pointer"
           >
-            {mode === 'add' ? 'Add Stock' : 'Reduce Stock'}
+            {isSubmitting
+              ? (mode === 'add' ? 'Adding Stock...' : 'Reducing Stock...')
+              : (mode === 'add' ? 'Add Stock' : 'Reduce Stock')}
           </button>
         </div>
       </form>

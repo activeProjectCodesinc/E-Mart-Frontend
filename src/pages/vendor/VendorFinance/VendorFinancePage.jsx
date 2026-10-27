@@ -54,7 +54,7 @@ export const VendorFinancePage = () => {
 
     setPayouts((prev) => [newPayout, ...prev]);
     setIsRequestModalOpen(false);
-    toast.success(`Payout request of $${amount.toFixed(2)} submitted successfully!`);
+    toast.success(`Payout request of PKR ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} submitted successfully!`);
   };
 
   const handleSaveBank = (updatedBank) => {
@@ -72,14 +72,14 @@ export const VendorFinancePage = () => {
       {!isAdminStore && (
         <>
           <PayoutBannerCard
-            amount={`$${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            amount={`PKR ${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
             nextDate={balance.nextPayoutDate}
             onRequestPayout={() => setIsRequestModalOpen(true)}
           />
 
           <PayoutBalanceCard
-            available={`$${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            minimum={`$${balance.minimumAmount.toFixed(2)}`}
+            available={`PKR ${balance.available.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            minimum={`PKR ${balance.minimumAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
             autoPayoutEnabled={balance.autoPayout}
             autoPayoutFrequency={balance.frequency}
           />
