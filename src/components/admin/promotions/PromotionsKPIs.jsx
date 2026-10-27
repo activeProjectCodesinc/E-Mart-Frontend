@@ -1,9 +1,12 @@
-export const PromotionsKPIs = ({ deals }) => {
-  const totalDeals = deals.length;
-  const activeDeals = deals.filter((d) => d.status === 'Active').length;
-  const activeProducts = deals
-    .filter((d) => d.status === 'Active')
-    .reduce((sum, d) => sum + (d.activeProductsCount || d.productIds?.length || 0), 0);
+export const PromotionsKPIs = ({ deals = [], kpis = null }) => {
+  const totalDeals = kpis?.totalDeals ?? deals.length;
+  const activeDeals =
+    kpis?.activeDeals ?? deals.filter((d) => d.status === 'Active').length;
+  const activeProducts =
+    kpis?.activeProducts ??
+    deals
+      .filter((d) => d.status === 'Active')
+      .reduce((sum, d) => sum + (d.activeProductsCount || d.productIds?.length || 0), 0);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

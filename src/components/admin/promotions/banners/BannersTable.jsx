@@ -1,4 +1,4 @@
-import { SquarePenIcon } from '@/icons';
+import { SquarePenIcon, TrashIcon } from '@/icons';
 
 const getStatusBadgeClass = (status) => {
   switch (status) {
@@ -13,6 +13,7 @@ const getStatusBadgeClass = (status) => {
 export const BannersTable = ({
   banners,
   onEdit,
+  onDelete = null,
   onToggleEnabled,
 }) => {
   return (
@@ -138,15 +139,27 @@ export const BannersTable = ({
 
                   {/* Actions Column */}
                   <td className="py-4 px-4 align-top text-right">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(banner)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-orange-200 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50/50 transition-all cursor-pointer shadow-2xs"
-                      title="Edit banner"
-                    >
-                      <SquarePenIcon size={13} animateOnHover={false} />
-                      <span>Edit</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(banner)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-orange-200 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:bg-orange-50/50 transition-all cursor-pointer shadow-2xs"
+                        title="Edit banner"
+                      >
+                        <SquarePenIcon size={13} animateOnHover={false} />
+                        <span>Edit</span>
+                      </button>
+                      {onDelete && (
+                        <button
+                          type="button"
+                          onClick={() => onDelete(banner.id)}
+                          className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer shadow-2xs"
+                          title="Delete banner"
+                        >
+                          <TrashIcon size={13} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

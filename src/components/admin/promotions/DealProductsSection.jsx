@@ -1,13 +1,38 @@
+import { useMemo } from 'react';
 import { XIcon } from '@/icons';
 import { ProductSelectDropdown } from './ProductSelectDropdown';
 import { AVAILABLE_PRODUCTS_CATALOG } from '@/mock/admin/promotions.mock';
+import { useAdminProducts } from '@/hooks/useAdminProducts';
 
 export const DealProductsSection = ({
   selectedProductIds,
   onToggleProduct,
   onRemoveProduct,
 }) => {
-  const selectedProducts = AVAILABLE_PRODUCTS_CATALOG.filter((p) =>
+  const { products: apiProducts } = useAdminProducts({ pageSize: 100 });
+
+  const catalog = useMemo(() => {
+    if (apiProducts && apiProducts.length > 0) {
+      const normalizedApi = apiProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category?.name || p.category || 'General',
+        price: `PKR ${Number(p.price || p.basePrice || 0).toLocaleString()}`,
+        image:
+          p.imageUrl ||
+          p.image ||
+          p.images?.[0]?.url ||
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
+      }));
+
+      const ids = new Set(normalizedApi.map((p) => p.id));
+      const remainingMock = AVAILABLE_PRODUCTS_CATALOG.filter((p) => !ids.has(p.id));
+      return [...normalizedApi, ...remainingMock];
+    }
+    return AVAILABLE_PRODUCTS_CATALOG;
+  }, [apiProducts]);
+
+  const selectedProducts = catalog.filter((p) =>
     selectedProductIds.includes(p.id)
   );
 
@@ -27,6 +52,7 @@ export const DealProductsSection = ({
         <ProductSelectDropdown
           selectedProductIds={selectedProductIds}
           onToggleProduct={onToggleProduct}
+          productsList={catalog}
         />
       </div>
 

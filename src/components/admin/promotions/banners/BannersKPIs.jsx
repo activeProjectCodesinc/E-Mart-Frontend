@@ -1,6 +1,7 @@
-export const BannersKPIs = ({ banners = [] }) => {
-  const totalBanners = banners.length;
-  const activeBanners = banners.filter((b) => b.status === 'Active').length;
+export const BannersKPIs = ({ banners = [], kpis = null }) => {
+  const totalBanners = kpis?.totalBanners ?? banners.length;
+  const activeBanners =
+    kpis?.activeBanners ?? banners.filter((b) => b.status === 'Active').length;
 
   const homepageCount = banners.filter((b) => b.placement === 'Homepage').length;
   const categoryCount = banners.filter(
@@ -10,6 +11,7 @@ export const BannersKPIs = ({ banners = [] }) => {
   const placementsCount = (homepageCount > 0 ? 1 : 0) + (categoryCount > 0 ? 1 : 0);
 
   const getPlacementsSubtext = () => {
+    if (kpis?.placementCountSummary) return kpis.placementCountSummary;
     if (homepageCount > 0 && categoryCount > 0) {
       const hText = homepageCount === 1 ? 'One homepage' : `${homepageCount} homepages`;
       const cText = categoryCount === 1 ? 'one category' : `${categoryCount} categories`;
@@ -30,7 +32,9 @@ export const BannersKPIs = ({ banners = [] }) => {
             {totalBanners}
           </span>
         </div>
-        <p className="text-xs text-slate-500">Homepage and Category Page</p>
+        <p className="text-xs text-slate-500">
+          {kpis?.placementsSummary || 'Homepage and Category Page'}
+        </p>
       </div>
 
       {/* Active Banners Card */}
@@ -41,7 +45,9 @@ export const BannersKPIs = ({ banners = [] }) => {
             {activeBanners}
           </span>
         </div>
-        <p className="text-xs text-slate-500">Currently visible in your store</p>
+        <p className="text-xs text-slate-500">
+          {kpis?.activeSummary || 'Currently visible in your store'}
+        </p>
       </div>
 
       {/* Banner Placements Card */}
@@ -49,7 +55,7 @@ export const BannersKPIs = ({ banners = [] }) => {
         <span className="text-xs font-medium text-slate-500">Banner placements</span>
         <div className="my-2">
           <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            {placementsCount || totalBanners}
+            {kpis?.bannerPlacements ?? (placementsCount || totalBanners)}
           </span>
         </div>
         <p className="text-xs text-slate-500">{getPlacementsSubtext()}</p>

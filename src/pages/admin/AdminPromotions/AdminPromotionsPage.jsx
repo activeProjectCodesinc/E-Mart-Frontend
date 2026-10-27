@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PlusIcon } from '@/icons';
 import { PROMOTION_TABS } from '@/mock/admin/promotions.mock';
@@ -19,6 +19,12 @@ export const AdminPromotionsPage = () => {
 
   const [activeTab, setActiveTab] = useState(matchedTab || 'Banner');
   const [isCreateBannerOpen, setIsCreateBannerOpen] = useState(false);
+
+  useEffect(() => {
+    if (matchedTab && matchedTab !== activeTab) {
+      setActiveTab(matchedTab);
+    }
+  }, [matchedTab]);
 
   const handleSelectTab = (tab) => {
     setActiveTab(tab);

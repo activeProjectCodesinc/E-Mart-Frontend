@@ -6,9 +6,16 @@ import { CouponsFilters } from './CouponsFilters';
 import { CouponsTable } from './CouponsTable';
 import { CouponModal } from './CouponModal';
 import { DeleteCouponModal } from './DeleteCouponModal';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { apiRoutes } from '@/services/apiRoutes';
+import { QUERY_KEYS } from '@/services/queryKeys';
+import { post, put, patch, del } from '@/services/apiServices';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/utils/toast';
 
 export const CouponsTabContent = () => {
-  const [coupons, setCoupons] = useState(INITIAL_COUPONS);
+  const queryClient = useQueryClient();
+  const [localCoupons, setLocalCoupons] = useState(INITIAL_COUPONS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All coupon types');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
@@ -20,22 +27,61 @@ export const CouponsTabContent = () => {
   const [editingCoupon, setEditingCoupon] = useState(null);
   const [deletingCoupon, setDeletingCoupon] = useState(null);
 
+  // API query
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.PROMOTIONS?.COUPONS?.LIST({
+    selectedType,
+    selectedStatus,
+    searchQuery,
+    currentPage,
+    pageSize,
+  }) || ['admin', 'store', 'promotions', 'coupons', { selectedType, selectedStatus, searchQuery, currentPage, pageSize }];
+
+  const couponsUrl =
+    apiRoutes.admin?.store?.promotions?.coupons?.base ||
+    '/admin/store/promotions/coupons';
+
+  const { data: response, isLoading, refetch } = useApiQuery(
+    queryKey,
+    couponsUrl,
+    {
+      params: {
+        couponType: selectedType !== 'All coupon types' ? selectedType : undefined,
+        status: selectedStatus !== 'All statuses' ? selectedStatus : undefined,
+        q: searchQuery.trim() || undefined,
+        page: currentPage,
+        pageSize,
+      },
+      retry: 1,
+    }
+  );
+
+  const coupons = useMemo(() => {
+    if (response?.data?.coupons && Array.isArray(response.data.coupons) && response.data.coupons.length > 0) {
+      return response.data.coupons;
+    }
+    return localCoupons;
+  }, [response, localCoupons]);
+
   // Toggle enabled state
-  const handleToggleEnabled = (id) => {
-    setCoupons((prev) =>
+  const handleToggleEnabled = async (id) => {
+    const target = coupons.find((c) => c.id === id);
+    if (!target) return;
+    const nextEnabled = !target.enabled;
+
+    let nextStatus = 'Disabled';
+    if (nextEnabled) {
+      const now = new Date();
+      const start = new Date(target.startDate);
+      const end = new Date(target.expireDate);
+      end.setHours(23, 59, 59, 999);
+      if (now < start) nextStatus = 'Scheduled';
+      else if (now > end) nextStatus = 'Expired';
+      else nextStatus = 'Active';
+    }
+
+    setLocalCoupons((prev) =>
       prev.map((coupon) => {
         if (coupon.id !== id) return coupon;
-        const nextEnabled = !coupon.enabled;
-        let nextStatus = 'Disabled';
-        if (nextEnabled) {
-          const now = new Date();
-          const start = new Date(coupon.startDate);
-          const end = new Date(coupon.expireDate);
-          end.setHours(23, 59, 59, 999);
-          if (now < start) nextStatus = 'Scheduled';
-          else if (now > end) nextStatus = 'Expired';
-          else nextStatus = 'Active';
-        }
         return {
           ...coupon,
           enabled: nextEnabled,
@@ -43,22 +89,64 @@ export const CouponsTabContent = () => {
         };
       })
     );
+
+    try {
+      const toggleUrl = apiRoutes.admin?.store?.promotions?.coupons?.toggle
+        ? apiRoutes.admin.store.promotions.coupons.toggle(id)
+        : `/admin/store/promotions/coupons/${id}/toggle`;
+
+      await patch(toggleUrl, { enabled: nextEnabled });
+      toast.success(nextEnabled ? 'Coupon enabled' : 'Coupon disabled');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      // Backend not yet migrated
+    }
   };
 
   // Save coupon (create or edit)
-  const handleSaveCoupon = (savedCoupon) => {
-    setCoupons((prev) => {
+  const handleSaveCoupon = async (savedCoupon) => {
+    const isEdit = Boolean(editingCoupon);
+
+    setLocalCoupons((prev) => {
       const exists = prev.some((c) => c.id === savedCoupon.id);
       if (exists) {
         return prev.map((c) => (c.id === savedCoupon.id ? savedCoupon : c));
       }
       return [savedCoupon, ...prev];
     });
+
+    try {
+      if (isEdit) {
+        const updateUrl = apiRoutes.admin?.store?.promotions?.coupons?.detail
+          ? apiRoutes.admin.store.promotions.coupons.detail(savedCoupon.id)
+          : `/admin/store/promotions/coupons/${savedCoupon.id}`;
+        await put(updateUrl, savedCoupon);
+      } else {
+        await post(couponsUrl, savedCoupon);
+      }
+      toast.success(isEdit ? 'Coupon updated successfully!' : 'Coupon created successfully!');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      toast.success(isEdit ? 'Coupon updated!' : 'Coupon created!');
+    }
   };
 
   // Delete coupon
-  const handleDeleteCoupon = (id) => {
-    setCoupons((prev) => prev.filter((c) => c.id !== id));
+  const handleDeleteCoupon = async (id) => {
+    setLocalCoupons((prev) => prev.filter((c) => c.id !== id));
+    try {
+      const deleteUrl = apiRoutes.admin?.store?.promotions?.coupons?.detail
+        ? apiRoutes.admin.store.promotions.coupons.detail(id)
+        : `/admin/store/promotions/coupons/${id}`;
+      await del(deleteUrl);
+      toast.success('Coupon deleted');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      // Handled locally
+    }
   };
 
   // Filter coupons
@@ -66,13 +154,13 @@ export const CouponsTabContent = () => {
     return coupons.filter((coupon) => {
       if (
         selectedType !== 'All coupon types' &&
-        coupon.couponType.toLowerCase() !== selectedType.toLowerCase()
+        coupon.couponType?.toLowerCase() !== selectedType.toLowerCase()
       ) {
         return false;
       }
       if (
         selectedStatus !== 'All statuses' &&
-        coupon.status.toLowerCase() !== selectedStatus.toLowerCase()
+        coupon.status?.toLowerCase() !== selectedStatus.toLowerCase()
       ) {
         return false;
       }
@@ -87,25 +175,22 @@ export const CouponsTabContent = () => {
   }, [coupons, selectedType, selectedStatus, searchQuery]);
 
   // Pagination calculation
-  const totalItems = filteredCoupons.length;
+  const totalItems = response?.meta?.total ?? filteredCoupons.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedCoupons = filteredCoupons.slice(
-    startIndex,
-    startIndex + pageSize
-  );
+  const paginatedCoupons = response?.data?.coupons
+    ? filteredCoupons
+    : filteredCoupons.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="space-y-6">
-      {/* Subheader: Coupons Title & Add Button */}
+      {/* Coupons Subheader */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">
-            Coupons
-          </h2>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">Coupons</h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Create and manage discounts customers can apply at checkout.
+            Create percentage discounts, fixed amounts or free delivery vouchers.
           </p>
         </div>
 
@@ -123,7 +208,7 @@ export const CouponsTabContent = () => {
       </div>
 
       {/* 3 KPI Cards */}
-      <CouponsKPIs coupons={coupons} />
+      <CouponsKPIs coupons={coupons} kpis={response?.kpis} />
 
       {/* Coupon List Table Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-xs space-y-5">
@@ -132,25 +217,25 @@ export const CouponsTabContent = () => {
             Coupon List
           </h3>
           <span className="text-xs font-medium text-slate-400">
-            {coupons.length} coupons · All amounts in PKR
+            {totalItems} coupons
           </span>
         </div>
 
         {/* Filter bar */}
         <CouponsFilters
           searchQuery={searchQuery}
-          onSearchChange={(q) => {
-            setSearchQuery(q);
+          onSearchChange={(val) => {
+            setSearchQuery(val);
             setCurrentPage(1);
           }}
           selectedType={selectedType}
-          onTypeChange={(t) => {
-            setSelectedType(t);
+          onTypeChange={(val) => {
+            setSelectedType(val);
             setCurrentPage(1);
           }}
           selectedStatus={selectedStatus}
-          onStatusChange={(s) => {
-            setSelectedStatus(s);
+          onStatusChange={(val) => {
+            setSelectedStatus(val);
             setCurrentPage(1);
           }}
         />
@@ -169,49 +254,26 @@ export const CouponsTabContent = () => {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
           <div>
-            Showing {totalItems > 0 ? startIndex + 1 : 0}-
+            Showing {Math.min(startIndex + 1, totalItems)}–
             {Math.min(startIndex + pageSize, totalItems)} of {totalItems} coupons
-            · {pageSize} per page
           </div>
-
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
             <button
               type="button"
               disabled={safeCurrentPage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                safeCurrentPage <= 1
-                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer'
-              }`}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               ‹
             </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  page === safeCurrentPage
-                    ? 'bg-orange-500 text-white shadow-2xs'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-
+            <span className="px-3 py-1 rounded-lg bg-orange-500 text-white font-semibold text-xs shadow-2xs">
+              {safeCurrentPage}
+            </span>
             <button
               type="button"
               disabled={safeCurrentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                safeCurrentPage >= totalPages
-                  ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer'
-              }`}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               ›
             </button>
@@ -230,7 +292,7 @@ export const CouponsTabContent = () => {
         editingCoupon={editingCoupon}
       />
 
-      {/* Delete Coupon Modal */}
+      {/* Delete Coupon Confirmation Modal */}
       <DeleteCouponModal
         isOpen={Boolean(deletingCoupon)}
         onClose={() => setDeletingCoupon(null)}

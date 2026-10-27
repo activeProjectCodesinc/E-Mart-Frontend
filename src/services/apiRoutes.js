@@ -50,6 +50,24 @@ export const apiRoutes = {
         notes: (id) => `/admin/store/customers/${id}/notes`,
         deleteNote: (id, noteId) => `/admin/store/customers/${id}/notes/${noteId}`,
       },
+      promotions: {
+        deals: {
+          base: '/admin/store/promotions/deals',
+          detail: (id) => `/admin/store/promotions/deals/${id}`,
+          publish: (id) => `/admin/store/promotions/deals/${id}/publish`,
+        },
+        coupons: {
+          base: '/admin/store/promotions/coupons',
+          detail: (id) => `/admin/store/promotions/coupons/${id}`,
+          toggle: (id) => `/admin/store/promotions/coupons/${id}/toggle`,
+        },
+        banners: {
+          base: '/admin/store/promotions/banners',
+          detail: (id) => `/admin/store/promotions/banners/${id}`,
+          toggle: (id) => `/admin/store/promotions/banners/${id}/toggle`,
+          upload: '/files/upload?purpose=banner',
+        },
+      },
       pos: {
         products: '/admin/store/pos/products',
         order: '/admin/store/pos/order',

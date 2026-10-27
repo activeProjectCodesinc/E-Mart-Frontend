@@ -1,11 +1,36 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { PlusIcon, SearchIcon, CheckIcon } from '@/icons';
 import { AVAILABLE_PRODUCTS_CATALOG } from '@/mock/admin/promotions.mock';
+import { useAdminProducts } from '@/hooks/useAdminProducts';
 
-export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct }) => {
+export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct, productsList = null }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
+
+  const { products: apiProducts } = useAdminProducts({ pageSize: 100 });
+
+  const catalog = useMemo(() => {
+    if (productsList && productsList.length > 0) return productsList;
+    if (apiProducts && apiProducts.length > 0) {
+      const normalizedApi = apiProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category?.name || p.category || 'General',
+        price: `PKR ${Number(p.price || p.basePrice || 0).toLocaleString()}`,
+        image:
+          p.imageUrl ||
+          p.image ||
+          p.images?.[0]?.url ||
+          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60',
+      }));
+
+      const ids = new Set(normalizedApi.map((p) => p.id));
+      const remainingMock = AVAILABLE_PRODUCTS_CATALOG.filter((p) => !ids.has(p.id));
+      return [...normalizedApi, ...remainingMock];
+    }
+    return AVAILABLE_PRODUCTS_CATALOG;
+  }, [apiProducts, productsList]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -18,7 +43,7 @@ export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct }) =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredProducts = AVAILABLE_PRODUCTS_CATALOG.filter((p) => {
+  const filteredProducts = catalog.filter((p) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
@@ -36,7 +61,7 @@ export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct }) =
         <span>Add Products</span>
       </button>
 
-      {/* Dropdown Menu (Opens on left side so it doesn't overflow or break layout) */}
+      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[85vw] bg-white rounded-2xl shadow-xl border border-slate-200 z-50 p-3 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
           {/* Search Input */}
@@ -50,7 +75,7 @@ export const ProductSelectDropdown = ({ selectedProductIds, onToggleProduct }) =
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products to add..."
+              placeholder="Search store products..."
               className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white"
               autoFocus
             />

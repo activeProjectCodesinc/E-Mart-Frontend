@@ -1,7 +1,9 @@
-export const CouponsKPIs = ({ coupons = [] }) => {
-  const totalCoupons = coupons.length;
-  const activeCoupons = coupons.filter((c) => c.status === 'Active').length;
-  const totalUsage = coupons.reduce((sum, c) => sum + (Number(c.totalUsed) || 0), 0);
+export const CouponsKPIs = ({ coupons = [], kpis = null }) => {
+  const totalCoupons = kpis?.totalCoupons ?? coupons.length;
+  const activeCoupons =
+    kpis?.activeCoupons ?? coupons.filter((c) => c.status === 'Active').length;
+  const totalUsage =
+    kpis?.totalUsage ?? coupons.reduce((sum, c) => sum + (Number(c.totalUsed) || 0), 0);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

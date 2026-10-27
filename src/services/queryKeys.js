@@ -31,6 +31,23 @@ export const QUERY_KEYS = {
         ALL: ['admin', 'store', 'pos'],
         PRODUCTS: (params = {}) => ['admin', 'store', 'pos', 'products', params],
       },
+      PROMOTIONS: {
+        DEALS: {
+          ALL: ['admin', 'store', 'promotions', 'deals'],
+          LIST: (params = {}) => ['admin', 'store', 'promotions', 'deals', 'list', params],
+          DETAIL: (id) => ['admin', 'store', 'promotions', 'deals', 'detail', id],
+        },
+        COUPONS: {
+          ALL: ['admin', 'store', 'promotions', 'coupons'],
+          LIST: (params = {}) => ['admin', 'store', 'promotions', 'coupons', 'list', params],
+          DETAIL: (id) => ['admin', 'store', 'promotions', 'coupons', 'detail', id],
+        },
+        BANNERS: {
+          ALL: ['admin', 'store', 'promotions', 'banners'],
+          LIST: (params = {}) => ['admin', 'store', 'promotions', 'banners', 'list', params],
+          DETAIL: (id) => ['admin', 'store', 'promotions', 'banners', 'detail', id],
+        },
+      },
     },
   },
   CATEGORIES: {

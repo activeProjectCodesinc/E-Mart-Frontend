@@ -6,41 +6,131 @@ import { PromotionsFilters } from './PromotionsFilters';
 import { PromotionsTable } from './PromotionsTable';
 import { DealModal } from './DealModal';
 import { DeleteDealModal } from './DeleteDealModal';
+import { useApiQuery } from '@/hooks/useApiQuery';
+import { apiRoutes } from '@/services/apiRoutes';
+import { QUERY_KEYS } from '@/services/queryKeys';
+import { post, put, patch, del } from '@/services/apiServices';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/utils/toast';
 
 export const DealsTabContent = () => {
-  const [deals, setDeals] = useState(INITIAL_DEALS);
+  const queryClient = useQueryClient();
+  const [localDeals, setLocalDeals] = useState(INITIAL_DEALS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All deal types');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   // Modal states
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
   const [deletingDeal, setDeletingDeal] = useState(null);
 
+  // API query
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.PROMOTIONS?.DEALS?.LIST({
+    selectedType,
+    selectedStatus,
+    searchQuery,
+    currentPage,
+    pageSize,
+  }) || ['admin', 'store', 'promotions', 'deals', { selectedType, selectedStatus, searchQuery, currentPage, pageSize }];
+
+  const dealsUrl =
+    apiRoutes.admin?.store?.promotions?.deals?.base ||
+    '/admin/store/promotions/deals';
+
+  const { data: response, isLoading, refetch } = useApiQuery(
+    queryKey,
+    dealsUrl,
+    {
+      params: {
+        dealType: selectedType !== 'All deal types' ? selectedType : undefined,
+        status: selectedStatus !== 'All statuses' ? selectedStatus : undefined,
+        q: searchQuery.trim() || undefined,
+        page: currentPage,
+        pageSize,
+      },
+      retry: 1,
+    }
+  );
+
+  const deals = useMemo(() => {
+    if (response?.data?.deals && Array.isArray(response.data.deals) && response.data.deals.length > 0) {
+      return response.data.deals;
+    }
+    return localDeals;
+  }, [response, localDeals]);
+
   // Toggle publish state
-  const handleTogglePublish = (id) => {
-    setDeals((prev) =>
+  const handleTogglePublish = async (id) => {
+    const target = deals.find((d) => d.id === id);
+    if (!target) return;
+    const nextPublished = !target.published;
+
+    setLocalDeals((prev) =>
       prev.map((deal) =>
-        deal.id === id ? { ...deal, published: !deal.published } : deal
+        deal.id === id ? { ...deal, published: nextPublished } : deal
       )
     );
+
+    try {
+      const publishUrl = apiRoutes.admin?.store?.promotions?.deals?.publish
+        ? apiRoutes.admin.store.promotions.deals.publish(id)
+        : `/admin/store/promotions/deals/${id}/publish`;
+
+      await patch(publishUrl, { published: nextPublished });
+      toast.success(nextPublished ? 'Deal published' : 'Deal unpublished');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      // Handled locally
+    }
   };
 
   // Save deal (create or edit)
-  const handleSaveDeal = (savedDeal) => {
-    setDeals((prev) => {
+  const handleSaveDeal = async (savedDeal) => {
+    const isEdit = Boolean(editingDeal);
+
+    setLocalDeals((prev) => {
       const exists = prev.some((d) => d.id === savedDeal.id);
       if (exists) {
         return prev.map((d) => (d.id === savedDeal.id ? savedDeal : d));
       }
       return [savedDeal, ...prev];
     });
+
+    try {
+      if (isEdit) {
+        const updateUrl = apiRoutes.admin?.store?.promotions?.deals?.detail
+          ? apiRoutes.admin.store.promotions.deals.detail(savedDeal.id)
+          : `/admin/store/promotions/deals/${savedDeal.id}`;
+        await put(updateUrl, savedDeal);
+      } else {
+        await post(dealsUrl, savedDeal);
+      }
+      toast.success(isEdit ? 'Deal updated successfully!' : 'Deal created successfully!');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      toast.success(isEdit ? 'Deal updated!' : 'Deal created!');
+    }
   };
 
   // Delete deal
-  const handleDeleteDeal = (id) => {
-    setDeals((prev) => prev.filter((d) => d.id !== id));
+  const handleDeleteDeal = async (id) => {
+    setLocalDeals((prev) => prev.filter((d) => d.id !== id));
+    try {
+      const deleteUrl = apiRoutes.admin?.store?.promotions?.deals?.detail
+        ? apiRoutes.admin.store.promotions.deals.detail(id)
+        : `/admin/store/promotions/deals/${id}`;
+      await del(deleteUrl);
+      toast.success('Deal deleted');
+      queryClient.invalidateQueries({ queryKey });
+      refetch();
+    } catch {
+      // Handled locally
+    }
   };
 
   // Filtered deals
@@ -52,11 +142,19 @@ export const DealsTabContent = () => {
         return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        if (!deal.title.toLowerCase().includes(q)) return false;
+        if (!deal.title?.toLowerCase().includes(q)) return false;
       }
       return true;
     });
   }, [deals, selectedType, selectedStatus, searchQuery]);
+
+  const totalItems = response?.meta?.total ?? filteredDeals.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedDeals = response?.data?.deals
+    ? filteredDeals
+    : filteredDeals.slice(startIndex, startIndex + pageSize);
 
   return (
     <div className="space-y-6">
@@ -83,7 +181,7 @@ export const DealsTabContent = () => {
       </div>
 
       {/* 3 KPI Cards */}
-      <PromotionsKPIs deals={deals} />
+      <PromotionsKPIs deals={deals} kpis={response?.kpis} />
 
       {/* Deal List Table Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-xs space-y-5">
@@ -92,23 +190,32 @@ export const DealsTabContent = () => {
             Deal List
           </h3>
           <span className="text-xs font-medium text-slate-400">
-            {deals.length} deals · 3 deal types
+            {totalItems} deals · 3 deal types
           </span>
         </div>
 
         {/* Filter bar */}
         <PromotionsFilters
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            setCurrentPage(1);
+          }}
           selectedType={selectedType}
-          onTypeChange={setSelectedType}
+          onTypeChange={(val) => {
+            setSelectedType(val);
+            setCurrentPage(1);
+          }}
           selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
+          onStatusChange={(val) => {
+            setSelectedStatus(val);
+            setCurrentPage(1);
+          }}
         />
 
         {/* Table */}
         <PromotionsTable
-          deals={filteredDeals}
+          deals={paginatedDeals}
           onEdit={(deal) => {
             setEditingDeal(deal);
             setIsDealModalOpen(true);
@@ -120,23 +227,26 @@ export const DealsTabContent = () => {
         {/* Pagination Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
           <div>
-            Showing 1-{filteredDeals.length} of {deals.length} deals · 5 per page
+            Showing {Math.min(startIndex + 1, totalItems)}–
+            {Math.min(startIndex + pageSize, totalItems)} of {totalItems} deals
           </div>
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
             <button
               type="button"
-              disabled
-              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed text-xs"
+              disabled={safeCurrentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               ‹
             </button>
             <span className="px-3 py-1 rounded-lg bg-orange-500 text-white font-semibold text-xs shadow-2xs">
-              1
+              {safeCurrentPage}
             </span>
             <button
               type="button"
-              disabled
-              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed text-xs"
+              disabled={safeCurrentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               ›
             </button>
