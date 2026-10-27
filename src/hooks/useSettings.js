@@ -14,20 +14,35 @@ export const useSettings = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Mutation to update profile details (fullName, phone, avatar)
+  // Mutation to update profile details (fullName, phone, avatar/file in single endpoint)
   const updateProfileMutation = useApiMutation(
-    (data) => patch(apiRoutes.user.updateProfile, data),
+    (data) => {
+      const isMultipart = data instanceof FormData;
+      return patch(apiRoutes.user.updateProfile, data, null, isMultipart);
+    },
     {
       invalidateKey: QUERY_KEYS.AUTH.PROFILE,
       successMessage: 'Account settings saved successfully!',
       onSuccess: (res) => {
-        const updatedUser = res?.data?.user || res?.data || res?.user;
-        if (updatedUser) {
+        const updated = res?.data?.user || res?.data || res?.user;
+        if (updated) {
           try {
-            const current = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            localStorage.setItem('adminUser', JSON.stringify({ ...current, ...updatedUser }));
+            const oldAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            localStorage.setItem(
+              'adminUser',
+              JSON.stringify({
+                ...oldAdmin,
+                ...updated,
+                fullName: updated.fullName || oldAdmin.fullName,
+                firstName: updated.firstName || oldAdmin.firstName,
+                lastName: updated.lastName || oldAdmin.lastName,
+                email: updated.email || oldAdmin.email,
+                phone: updated.phone || oldAdmin.phone,
+                avatar: updated.avatar || updated.avatarUrl || updated.profileImage || oldAdmin.avatar,
+              })
+            );
           } catch {
-            // ignore
+            // Ignore parse errors
           }
         }
       },

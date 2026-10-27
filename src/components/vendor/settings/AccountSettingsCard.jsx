@@ -1,47 +1,19 @@
 import { useRef } from 'react';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { UserIcon, ChevronDownIcon } from '@/icons';
-import { useSettings } from '@/hooks/useSettings';
 
 export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }) => {
   const fileInputRef = useRef(null);
   const [userRef, userTrigger] = useAnimatedIcon();
-  const { uploadAvatar, isUploadingAvatar } = useSettings();
 
-  const handleAvatarChange = async (e) => {
+  const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Fast local preview
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      onChange('avatar', event.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to Cloudinary under emart folder via hook
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await uploadAvatar(formData);
-      const uploadedUrl =
-        res?.data?.url ||
-        res?.data?.secure_url ||
-        res?.data?.avatarUrl ||
-        res?.data?.profileImage ||
-        res?.url ||
-        res?.secure_url ||
-        res?.avatarUrl;
-
-      if (uploadedUrl) {
-        onChange('avatar', uploadedUrl);
-        if (typeof onSave === 'function') {
-          onSave({ avatar: uploadedUrl });
-        }
-      }
-    } catch {
-      // Handled by hook
-    }
+    // Fast local preview without separate upload endpoint
+    const previewUrl = URL.createObjectURL(file);
+    onChange('avatar', previewUrl);
+    onChange('avatarFile', file);
   };
 
   return (
@@ -85,19 +57,14 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
                   {data.fullName?.charAt(0)?.toUpperCase() || 'A'}
                 </div>
               )}
-              {isUploadingAvatar && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-[10px] font-semibold">
-                  Uploading...
-                </div>
-              )}
             </div>
             <button
               type="button"
-              disabled={isUploadingAvatar}
+              disabled={isSaving}
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1.5 border border-orange-300 text-orange-600 hover:bg-orange-50/70 font-semibold text-xs rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
             >
-              {isUploadingAvatar ? 'Uploading...' : 'Change Photo'}
+              Change Photo
             </button>
             <input
               ref={fileInputRef}
@@ -164,7 +131,7 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
           <div className="pt-2 flex justify-end">
             <button
               type="button"
-              disabled={isSaving || isUploadingAvatar}
+              disabled={isSaving}
               onClick={onSave}
               className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
             >
