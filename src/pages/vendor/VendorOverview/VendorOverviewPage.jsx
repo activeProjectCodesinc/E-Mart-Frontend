@@ -117,13 +117,22 @@ export const VendorOverviewPage = () => {
 
   const topProductsData = useMemo(() => {
     if (topProducts && Array.isArray(topProducts)) {
-      return topProducts.map((p, idx) => ({
-        id: p.productId || `tp-${idx}`,
-        name: p.name,
-        sales: `${Number(p.sales || 0).toLocaleString()} sales`,
-        price: `PKR ${Number(p.revenue || 0).toLocaleString()}`,
-        img: p.imageUrl || TOP_SELLING_PRODUCTS[idx % TOP_SELLING_PRODUCTS.length]?.img,
-      }));
+      return topProducts.map((p, idx) => {
+        const unitPrice =
+          p.price != null
+            ? Number(p.price)
+            : p.sales && Number(p.sales) > 0
+            ? Number(p.revenue || 0) / Number(p.sales)
+            : Number(p.revenue || 0);
+
+        return {
+          id: p.productId || `tp-${idx}`,
+          name: p.name,
+          sales: `${Number(p.sales || 0).toLocaleString()} sales`,
+          price: `PKR ${unitPrice.toLocaleString()}`,
+          img: p.imageUrl || TOP_SELLING_PRODUCTS[idx % TOP_SELLING_PRODUCTS.length]?.img,
+        };
+      });
     }
     return TOP_SELLING_PRODUCTS;
   }, [topProducts]);
