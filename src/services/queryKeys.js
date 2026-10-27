@@ -58,6 +58,11 @@ export const QUERY_KEYS = {
         ALL: ['admin', 'store', 'analytics'],
         OVERVIEW: (params = {}) => ['admin', 'store', 'analytics', 'overview', params],
       },
+      NOTIFICATIONS: {
+        ALL: ['admin', 'store', 'notifications'],
+        LIST: (params = {}) => ['admin', 'store', 'notifications', 'list', params],
+        UNREAD_COUNT: ['admin', 'store', 'notifications', 'unread-count'],
+      },
     },
   },
   CATEGORIES: {

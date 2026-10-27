@@ -4,6 +4,7 @@ import { BellIcon, MenuIcon, ChevronDownIcon, SettingsIcon, LockIcon } from '@/i
 import { toast } from '@/utils/toast';
 import { post } from '@/services/apiServices';
 import { useSettings } from '@/hooks/useSettings';
+import { useStoreNotifications } from '@/hooks/useStoreNotifications';
 import { getRefreshToken, clearAllAuth } from '@/services/tokenService';
 
 export const AdminHeader = ({ onOpenSidebar }) => {
@@ -13,6 +14,7 @@ export const AdminHeader = ({ onOpenSidebar }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef(null);
   const { profile } = useSettings();
+  const { unreadCount = 0 } = useStoreNotifications();
 
   const notificationsPath = location.pathname.startsWith('/admin/store')
     ? '/admin/store/notifications'
@@ -85,9 +87,11 @@ export const AdminHeader = ({ onOpenSidebar }) => {
           className="relative p-2 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-orange-600 hover:border-orange-200 shadow-2xs transition-all cursor-pointer"
         >
           <BellIcon size={18} />
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
-            4
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
 
         {/* Admin Profile Dropdown */}

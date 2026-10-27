@@ -3,6 +3,7 @@ export const NotificationsFilterTabs = ({
   activeTab = 'all',
   onTabChange,
   onMarkAllAsRead,
+  onClearAll,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80">
@@ -33,13 +34,24 @@ export const NotificationsFilterTabs = ({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={onMarkAllAsRead}
-        className="text-xs sm:text-sm font-semibold text-orange-600 hover:text-orange-700 cursor-pointer pb-2 sm:pb-3 self-end sm:self-auto transition-colors"
-      >
-        Mark all as read
-      </button>
+      <div className="flex items-center gap-4 pb-2 sm:pb-3 self-end sm:self-auto">
+        {onClearAll && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="text-xs sm:text-sm font-semibold text-slate-400 hover:text-rose-600 cursor-pointer transition-colors"
+          >
+            Clear all
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onMarkAllAsRead}
+          className="text-xs sm:text-sm font-semibold text-orange-600 hover:text-orange-700 cursor-pointer transition-colors"
+        >
+          Mark all as read
+        </button>
+      </div>
     </div>
   );
 };

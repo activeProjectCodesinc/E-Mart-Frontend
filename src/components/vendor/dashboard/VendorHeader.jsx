@@ -3,12 +3,14 @@ import { BellIcon, MenuIcon } from '@/icons';
 import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { useSettings } from '@/hooks/useSettings';
 import { usePortalBase } from '@/utils/usePortalBase';
+import { useStoreNotifications } from '@/hooks/useStoreNotifications';
 
 export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName = 'User Name' }) => {
   const navigate = useNavigate();
   const { getRoute } = usePortalBase();
   const [bellRef, bellTrigger] = useAnimatedIcon();
   const { profile } = useSettings();
+  const { unreadCount = 0 } = useStoreNotifications();
 
   const userAvatar = profile?.avatar || profile?.avatarUrl || profile?.profileImage;
   const displayName = profile?.fullName || profile?.firstName || userName;
@@ -48,7 +50,9 @@ export const VendorHeader = ({ onOpenSidebar, storeName = 'Fresh Mart', userName
           aria-label="Notifications"
         >
           <BellIcon ref={bellRef} size={17} />
-          <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-white" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-white" />
+          )}
         </button>
 
         <div className="flex items-center gap-2 p-1 sm:pl-1.5 sm:pr-3 sm:py-1.5 rounded-full bg-white border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all cursor-pointer">

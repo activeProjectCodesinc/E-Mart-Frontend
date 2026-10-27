@@ -82,6 +82,14 @@ export const apiRoutes = {
         base: '/admin/store/analytics',
         export: '/admin/store/analytics/export',
       },
+      notifications: {
+        base: '/admin/store/notifications',
+        unreadCount: '/admin/store/notifications/unread-count',
+        readAll: '/admin/store/notifications/read-all',
+        read: (id) => `/admin/store/notifications/${id}/read`,
+        clearAll: '/admin/store/notifications/clear-all',
+        delete: (id) => `/admin/store/notifications/${id}`,
+      },
     },
     customers: {
       base: '/admin/customers',
