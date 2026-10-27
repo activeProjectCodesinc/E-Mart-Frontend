@@ -24,28 +24,30 @@ import { post, put } from '@/services/apiServices';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/utils/toast';
 
+import { getPresetDates } from '@/utils/datePresets';
+
 export const VendorFinancePage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { getRoute } = usePortalBase();
 
-  const [dateRange] = useState(() => {
-    const now = new Date();
-    const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-    const to = now.toISOString().split('T')[0];
-    return { from, to };
-  });
+  const [dateRange, setDateRange] = useState(() => getPresetDates('this_month'));
 
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isEditBankModalOpen, setIsEditBankModalOpen] = useState(false);
 
   // Fetch Finance Overview from Backend API
-  const queryKey = QUERY_KEYS.ADMIN?.STORE?.FINANCE?.OVERVIEW(dateRange) || [
+  const queryParams = useMemo(() => ({
+    from: dateRange.from,
+    to: dateRange.to,
+  }), [dateRange.from, dateRange.to]);
+
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.FINANCE?.OVERVIEW(queryParams) || [
     'admin',
     'store',
     'finance',
     'overview',
-    dateRange,
+    queryParams,
   ];
   const financeUrl =
     apiRoutes.admin?.store?.finance?.base || '/admin/store/finance';
@@ -54,7 +56,7 @@ export const VendorFinancePage = () => {
     queryKey,
     financeUrl,
     {
-      params: dateRange,
+      params: queryParams,
       staleTime: 1000 * 60 * 3,
     }
   );
@@ -163,23 +165,16 @@ export const VendorFinancePage = () => {
     }
   };
 
-  const formattedDateRange = useMemo(() => {
-    const f = new Date(dateRange.from).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const t = new Date(dateRange.to).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    return `${f} - ${t}`;
-  }, [dateRange]);
+  const handlePeriodChange = (presetId) => {
+    setDateRange(getPresetDates(presetId));
+  };
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <FinanceHeader dateRange={formattedDateRange} />
+      <FinanceHeader
+        currentRange={dateRange}
+        onRangeChange={setDateRange}
+      />
 
       <FinanceMetricsGrid metrics={metrics} />
 
@@ -201,7 +196,11 @@ export const VendorFinancePage = () => {
         onEdit={() => setIsEditBankModalOpen(true)}
       />
 
-      <EarningsOverviewChart data={chartData} />
+      <EarningsOverviewChart
+        data={chartData}
+        period={dateRange.label || 'This Month'}
+        onPeriodChange={handlePeriodChange}
+      />
 
       <PayoutHistoryTable
         payouts={payouts}

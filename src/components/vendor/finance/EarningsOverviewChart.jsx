@@ -1,10 +1,23 @@
-import { useState, useMemo } from 'react';
-import { ChevronDownIcon } from '@/icons';
+import { useState, useMemo, useEffect } from 'react';
 import { EARNINGS_CHART_DATA } from '@/mock/vendor/vendorFinance.mock';
+import PeriodSelectDropdown from '@/components/vendor/analytics/PeriodSelectDropdown';
 
-export const EarningsOverviewChart = ({ data = EARNINGS_CHART_DATA }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('This Month');
+export const EarningsOverviewChart = ({
+  data = EARNINGS_CHART_DATA,
+  period = 'This Month',
+  onPeriodChange = null,
+}) => {
+  const [selectedPeriod, setSelectedPeriod] = useState(period);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  useEffect(() => {
+    if (period) setSelectedPeriod(period);
+  }, [period]);
+
+  const handleSelectPeriod = (presetId, label) => {
+    setSelectedPeriod(label);
+    if (onPeriodChange) onPeriodChange(presetId, label);
+  };
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return EARNINGS_CHART_DATA;
@@ -43,13 +56,10 @@ export const EarningsOverviewChart = ({ data = EARNINGS_CHART_DATA }) => {
             </span>
           </div>
 
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-700 hover:border-slate-300 cursor-pointer"
-          >
-            <span>{selectedPeriod}</span>
-            <ChevronDownIcon size={14} className="text-slate-400" />
-          </button>
+          <PeriodSelectDropdown
+            selectedPeriod={selectedPeriod}
+            onSelectPeriod={handleSelectPeriod}
+          />
         </div>
       </div>
 

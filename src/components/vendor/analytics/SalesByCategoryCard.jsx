@@ -1,13 +1,24 @@
-import { useState } from 'react';
-import { ChevronDownIcon } from '@/icons';
+import { useState, useEffect } from 'react';
 import { CATEGORY_SALES_DATA } from '@/mock/vendor/vendorAnalytics.mock';
 import DonutChart from './DonutChart';
+import PeriodSelectDropdown from './PeriodSelectDropdown';
 
 export const SalesByCategoryCard = ({
   data = CATEGORY_SALES_DATA,
   totalSales = 'PKR 0',
+  period = 'This Month',
+  onPeriodChange = null,
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('This Month');
+  const [selectedPeriod, setSelectedPeriod] = useState(period);
+
+  useEffect(() => {
+    if (period) setSelectedPeriod(period);
+  }, [period]);
+
+  const handleSelectPeriod = (presetId, label) => {
+    setSelectedPeriod(label);
+    if (onPeriodChange) onPeriodChange(presetId, label);
+  };
 
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
@@ -16,13 +27,10 @@ export const SalesByCategoryCard = ({
           Sales by Category
         </h3>
 
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-700 hover:border-slate-300 transition-colors cursor-pointer"
-        >
-          <span>{selectedPeriod}</span>
-          <ChevronDownIcon size={14} className="text-slate-400" />
-        </button>
+        <PeriodSelectDropdown
+          selectedPeriod={selectedPeriod}
+          onSelectPeriod={handleSelectPeriod}
+        />
       </div>
 
       <DonutChart

@@ -12,6 +12,8 @@ import baseURL from '@/services/apiBaseURL';
 import { getAccessToken } from '@/services/tokenService';
 import { toast } from '@/utils/toast';
 
+import { getPresetDates } from '@/utils/datePresets';
+
 const CATEGORY_COLORS = ['#f97316', '#fed7aa', '#c084fc', '#38bdf8', '#818cf8', '#22c55e'];
 const PAYMENT_COLORS = {
   cash: '#22c55e',
@@ -21,31 +23,27 @@ const PAYMENT_COLORS = {
 };
 
 export const VendorAnalyticsPage = () => {
-  const [dateRange] = useState(() => {
-    const now = new Date();
-    const fromDate = new Date();
-    fromDate.setDate(now.getDate() - 30);
-    return {
-      from: fromDate.toISOString().split('T')[0],
-      to: now.toISOString().split('T')[0],
-    };
-  });
-
+  const [dateRange, setDateRange] = useState(() => getPresetDates('last_30_days'));
   const [isExporting, setIsExporting] = useState(false);
 
-  // Fetch Analytics from Backend API
-  const queryKey = QUERY_KEYS.ADMIN?.STORE?.ANALYTICS?.OVERVIEW(dateRange) || [
+  // Fetch Analytics from Backend API with reactive dateRange
+  const queryParams = useMemo(() => ({
+    from: dateRange.from,
+    to: dateRange.to,
+  }), [dateRange.from, dateRange.to]);
+
+  const queryKey = QUERY_KEYS.ADMIN?.STORE?.ANALYTICS?.OVERVIEW(queryParams) || [
     'admin',
     'store',
     'analytics',
     'overview',
-    dateRange,
+    queryParams,
   ];
   const analyticsUrl =
     apiRoutes.admin?.store?.analytics?.base || '/admin/store/analytics';
 
   const { data: response, isLoading } = useApiQuery(queryKey, analyticsUrl, {
-    params: dateRange,
+    params: queryParams,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -165,24 +163,15 @@ export const VendorAnalyticsPage = () => {
     }
   };
 
-  const formattedDateRange = useMemo(() => {
-    const f = new Date(dateRange.from).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    const t = new Date(dateRange.to).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    return `${f} - ${t}`;
-  }, [dateRange]);
+  const handlePeriodChange = (presetId) => {
+    setDateRange(getPresetDates(presetId));
+  };
 
   return (
     <div className="space-y-4 sm:space-y-5">
       <AnalyticsHeader
-        dateRange={formattedDateRange}
+        currentRange={dateRange}
+        onRangeChange={setDateRange}
         onExport={handleExportCSV}
         isExporting={isExporting}
       />
@@ -191,12 +180,18 @@ export const VendorAnalyticsPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         <div className="lg:col-span-7 flex flex-col">
-          <SalesOrdersTrendChart data={analyticsData?.trend} />
+          <SalesOrdersTrendChart
+            data={analyticsData?.trend}
+            period={dateRange.label || 'This Month'}
+            onPeriodChange={handlePeriodChange}
+          />
         </div>
         <div className="lg:col-span-5 flex flex-col">
           <SalesByCategoryCard
             data={categoryData}
             totalSales={formattedTotalSales}
+            period={dateRange.label || 'This Month'}
+            onPeriodChange={handlePeriodChange}
           />
         </div>
       </div>

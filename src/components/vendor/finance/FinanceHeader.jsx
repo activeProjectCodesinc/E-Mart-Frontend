@@ -1,9 +1,6 @@
-import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
-import { CalendarDaysIcon, ChevronDownIcon } from '@/icons';
+import DateRangePickerDropdown from '@/components/vendor/analytics/DateRangePickerDropdown';
 
-export const FinanceHeader = ({ dateRange = 'Sep 1, 2025 - Sep 30, 2025' }) => {
-  const [calRef, calTrigger] = useAnimatedIcon();
-
+export const FinanceHeader = ({ currentRange, onRangeChange, dateRange }) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
@@ -16,16 +13,10 @@ export const FinanceHeader = ({ dateRange = 'Sep 1, 2025 - Sep 30, 2025' }) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onMouseEnter={calTrigger.onMouseEnter}
-          onMouseLeave={calTrigger.onMouseLeave}
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200/90 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 shadow-xs hover:border-slate-300 transition-all cursor-pointer"
-        >
-          <CalendarDaysIcon ref={calRef} size={16} animateOnHover={false} className="text-slate-500" />
-          <span>{dateRange}</span>
-          <ChevronDownIcon size={15} className="text-slate-400 ml-1" />
-        </button>
+        <DateRangePickerDropdown
+          currentRange={currentRange || { from: '', to: '' }}
+          onRangeChange={onRangeChange}
+        />
       </div>
     </div>
   );
