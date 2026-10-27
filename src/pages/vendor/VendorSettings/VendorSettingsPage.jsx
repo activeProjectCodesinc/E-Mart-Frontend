@@ -120,7 +120,10 @@ export const VendorSettingsPage = () => {
           isSaving={isUpdatingProfile}
         />
 
-        <PasswordSecurityCard hideCurrentPassword={isAdminStore} />
+        <PasswordSecurityCard
+          hideCurrentPassword={isAdminStore}
+          initialTwoFactor={profile?.twoFactorEnabled}
+        />
 
         {!isAdminStore && (
           <PaymentSettingsCard

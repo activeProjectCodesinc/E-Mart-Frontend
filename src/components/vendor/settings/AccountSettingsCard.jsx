@@ -68,21 +68,23 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="flex flex-col items-center gap-2 shrink-0">
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-orange-100 shadow-xs bg-slate-100 relative">
-              <img
-                src={
-                  data.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    data.fullName || 'Admin'
-                  )}&background=f97316&color=fff`
-                }
-                alt={data.fullName || 'User Avatar'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    data.fullName || 'Admin'
-                  )}&background=f97316&color=fff`;
-                }}
-              />
+              {data.avatar ? (
+                <img
+                  src={data.avatar}
+                  alt={data.fullName || 'Admin'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      data.fullName || 'Admin'
+                    )}&background=f97316&color=fff`;
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-amber-500 text-white font-bold text-xl">
+                  {data.fullName?.charAt(0)?.toUpperCase() || 'A'}
+                </div>
+              )}
               {isUploadingAvatar && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-[10px] font-semibold">
                   Uploading...
@@ -114,7 +116,7 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
               <input
                 type="text"
                 required
-                value={data.fullName}
+                value={data.fullName || ''}
                 onChange={(e) => onChange('fullName', e.target.value)}
                 placeholder="Ali Khan"
                 className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs"
@@ -128,7 +130,7 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
               <input
                 type="email"
                 required
-                value={data.email}
+                value={data.email || ''}
                 disabled
                 title="Email is your login identifier"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-500 cursor-not-allowed shadow-2xs"
@@ -150,8 +152,8 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
             <input
               type="tel"
               required
-              value={data.phone}
-              onChange={(e) => onChange('phone', e.target.value)}
+              value={data.phone ? String(data.phone).replace(/^\+92/, '') : ''}
+              onChange={(e) => onChange('phone', e.target.value.replace(/^\+92/, ''))}
               placeholder="3001234567"
               className="flex-1 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs"
             />
