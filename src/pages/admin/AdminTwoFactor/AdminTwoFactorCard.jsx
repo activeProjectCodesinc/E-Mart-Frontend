@@ -82,7 +82,7 @@ export const AdminTwoFactorCard = () => {
         if (adminAccess) localStorage.setItem('adminAccess', JSON.stringify(adminAccess));
       }
       toast.success('Admin identity verified! Entering dashboard.');
-      navigate('/admin/dashboard');
+      navigate('/admin/store/dashboard');
     } catch {
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();

@@ -32,7 +32,7 @@ export const AdminSidebar = ({ isOpen, onClose }) => {
         }`}
       >
         <div className="p-4 sm:p-5 flex items-center justify-between border-b border-orange-100/50">
-          <Link to="/admin/dashboard" className="flex items-center gap-3">
+          <Link to="/admin/store/dashboard" className="flex items-center gap-3">
             <div className="w-10 h-10">
               <img src={logoImg} alt="E-Mart" className="w-full h-full object-contain" />
             </div>

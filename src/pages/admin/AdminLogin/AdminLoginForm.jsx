@@ -75,10 +75,10 @@ export const AdminLoginForm = () => {
           localStorage.setItem('adminAccess', JSON.stringify(admin));
         }
         toast.success('Welcome back, Admin!');
-        navigate('/admin/dashboard');
+        navigate('/admin/store/dashboard');
       } else {
         toast.success('Logged in successfully!');
-        navigate('/admin/dashboard');
+        navigate('/admin/store/dashboard');
       }
     } catch (err) {
       toast.error(err?.message || 'Login failed. Please check your credentials.');

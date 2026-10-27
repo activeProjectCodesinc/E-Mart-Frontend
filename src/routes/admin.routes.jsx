@@ -52,7 +52,7 @@ export const adminRoutes = (
       <Route path="settings" element={<AdminSettingsPage />} />
       {adminStoreRoutes}
 
-      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/admin/store/dashboard" replace />} />
     </Route>
   </>
 );
