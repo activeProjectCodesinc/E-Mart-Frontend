@@ -37,16 +37,24 @@ export const VendorInventoryPage = () => {
       return apiInventory.map((item) => {
         const stockNum = Number(item.stock ?? 0);
         const lowAlert = Number(item.lowStockAlert ?? 10);
-        const derivedStatus =
-          typeof item.status === 'string'
-            ? item.status
-            : typeof item.status === 'object' && item.status !== null
-            ? (item.status.name || item.status.title || 'In Stock')
-            : stockNum === 0
-            ? 'Out of Stock'
-            : stockNum <= lowAlert
-            ? 'Low Stock'
-            : 'In Stock';
+
+        // Derive stock availability status for inventory (In Stock, Low Stock, Out of Stock)
+        let stockAvailability = 'In Stock';
+        if (
+          item.stockStatus === 'out_of_stock' ||
+          item.status === 'Out of Stock' ||
+          stockNum === 0
+        ) {
+          stockAvailability = 'Out of Stock';
+        } else if (
+          item.stockStatus === 'low_stock' ||
+          item.status === 'Low Stock' ||
+          stockNum <= lowAlert
+        ) {
+          stockAvailability = 'Low Stock';
+        } else {
+          stockAvailability = 'In Stock';
+        }
 
         // Extract clean strings in case backend returns relation objects { id, name }
         const unitStr =
@@ -92,6 +100,9 @@ export const VendorInventoryPage = () => {
           unit: unitStr,
           stock: stockNum,
           lowStockAlert: lowAlert,
+          status: stockAvailability,
+          stockStatus: stockAvailability,
+          productStatus: item.status || 'Active',
           image:
             (Array.isArray(item.images) && (item.images.find((img) => img.isMain)?.url || item.images[0]?.url)) ||
             item.imageUrl ||
@@ -116,6 +127,13 @@ export const VendorInventoryPage = () => {
     return inventoryItems.find((i) => i.id === activeStockProduct.id) || activeStockProduct;
   }, [activeStockProduct, inventoryItems]);
 
+  const displayedItems = useMemo(() => {
+    if (!stockFilter || stockFilter === 'All Products') return inventoryItems;
+    return inventoryItems.filter(
+      (item) => item.status?.toLowerCase() === stockFilter.toLowerCase()
+    );
+  }, [inventoryItems, stockFilter]);
+
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
@@ -123,10 +141,10 @@ export const VendorInventoryPage = () => {
   };
 
   const handleToggleSelectAll = () => {
-    if (selectedIds.length === inventoryItems.length) {
+    if (selectedIds.length === displayedItems.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(inventoryItems.map((i) => i.id));
+      setSelectedIds(displayedItems.map((i) => i.id));
     }
   };
 
@@ -176,7 +194,7 @@ export const VendorInventoryPage = () => {
       />
 
       <InventoryTable
-        items={inventoryItems}
+        items={displayedItems}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onToggleSelectAll={handleToggleSelectAll}
@@ -186,8 +204,8 @@ export const VendorInventoryPage = () => {
 
       <ProductsPagination
         currentPage={currentPage}
-        totalPages={meta?.pageSize ? Math.ceil((meta.total || 1) / meta.pageSize) : 1}
-        totalItems={meta?.total ?? inventoryItems.length}
+        totalPages={meta?.pageSize ? Math.ceil((meta.total || 1) / meta.pageSize) : Math.max(1, Math.ceil(displayedItems.length / 20))}
+        totalItems={meta?.total ?? displayedItems.length}
         itemsPerPage={meta?.pageSize || 20}
         onPageChange={setCurrentPage}
       />

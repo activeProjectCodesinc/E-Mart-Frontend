@@ -1,9 +1,18 @@
 import InventoryActionButtons from './InventoryActionButtons';
 
-const STATUS_BADGES = {
-  'In Stock': 'bg-[#eaf8ef] text-[#16a34a] border-[#bbf7d0]',
-  'Low Stock': 'bg-[#fff4eb] text-[#ea580c] border-[#fdba74]',
-  'Out of Stock': 'bg-[#fef2f2] text-[#ef4444] border-[#fecaca]',
+const STATUS_CONFIGS = {
+  'In Stock': {
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/90 shadow-2xs',
+    dot: 'bg-emerald-500 ring-2 ring-emerald-200',
+  },
+  'Low Stock': {
+    badge: 'bg-amber-50 text-amber-700 border-amber-200/90 shadow-2xs',
+    dot: 'bg-amber-500 ring-2 ring-amber-200',
+  },
+  'Out of Stock': {
+    badge: 'bg-rose-50 text-rose-700 border-rose-200/90 shadow-2xs',
+    dot: 'bg-rose-500 ring-2 ring-rose-200',
+  },
 };
 
 const renderText = (value, fallback = '') => {
@@ -39,7 +48,7 @@ export const InventoryTable = ({
               </th>
               <th className="py-3.5 px-3 sm:px-4">Product</th>
               <th className="py-3.5 px-3 sm:px-4">Current Stock</th>
-              <th className="py-3.5 px-3 sm:px-4">Status</th>
+              <th className="py-3.5 px-3 sm:px-4">Stock Status</th>
               <th className="py-3.5 px-3 sm:px-4 text-right">Action</th>
             </tr>
           </thead>
@@ -55,7 +64,7 @@ export const InventoryTable = ({
               items.map((item) => {
                 const isSelected = selectedIds.includes(item.id);
                 const statusStr = renderText(item.status, 'In Stock');
-                const badgeStyle = STATUS_BADGES[statusStr] || STATUS_BADGES['In Stock'];
+                const badgeStyle = STATUS_CONFIGS[statusStr] || STATUS_CONFIGS['In Stock'];
 
                 return (
                   <tr
@@ -105,9 +114,10 @@ export const InventoryTable = ({
 
                     <td className="py-3.5 px-3 sm:px-4">
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${badgeStyle}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${badgeStyle.badge}`}
                       >
-                        {statusStr}
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badgeStyle.dot}`} />
+                        <span>{statusStr}</span>
                       </span>
                     </td>
 
