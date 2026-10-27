@@ -10,6 +10,7 @@ import { toast } from '@/utils/toast';
 import { slideUp } from '@/animation/animations';
 
 import { post } from '@/services/apiServices';
+import { setAccessToken, setRefreshToken } from '@/services/tokenService';
 
 export const AdminLoginForm = () => {
   const navigate = useNavigate();
@@ -63,9 +64,9 @@ export const AdminLoginForm = () => {
           },
         });
       } else if (tokens?.accessToken) {
-        localStorage.setItem('token', tokens.accessToken);
+        setAccessToken(tokens.accessToken);
         if (tokens.refreshToken) {
-          localStorage.setItem('refreshToken', tokens.refreshToken);
+          setRefreshToken(tokens.refreshToken);
         }
         if (user) {
           localStorage.setItem('adminUser', JSON.stringify(user));

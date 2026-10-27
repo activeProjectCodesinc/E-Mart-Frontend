@@ -20,19 +20,57 @@ export const VendorSettingsPage = () => {
 
   const { profile, updateProfile, isUpdatingProfile } = useSettings();
 
-  const [accountData, setAccountData] = useState(INITIAL_ACCOUNT_SETTINGS);
+  const [accountData, setAccountData] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('adminUser') || '{}');
+      if (stored && (stored.email || stored.fullName || stored.avatar || stored.avatarUrl)) {
+        return {
+          ...INITIAL_ACCOUNT_SETTINGS,
+          fullName: stored.fullName || `${stored.firstName || ''} ${stored.lastName || ''}`.trim() || INITIAL_ACCOUNT_SETTINGS.fullName,
+          email: stored.email || INITIAL_ACCOUNT_SETTINGS.email,
+          phone: stored.phone || INITIAL_ACCOUNT_SETTINGS.phone,
+          avatar: stored.avatar || stored.avatarUrl || stored.profileImage || INITIAL_ACCOUNT_SETTINGS.avatar,
+        };
+      }
+    } catch {
+      // Fallback
+    }
+    return INITIAL_ACCOUNT_SETTINGS;
+  });
   const [paymentData, setPaymentData] = useState(INITIAL_PAYMENT_SETTINGS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATION_PREFERENCES);
 
   useEffect(() => {
     if (profile) {
-      setAccountData((prev) => ({
-        ...prev,
-        fullName: profile.fullName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || prev.fullName,
-        email: profile.email || prev.email,
-        phone: profile.phone || prev.phone,
-        avatar: profile.avatar || prev.avatar,
-      }));
+      const user = profile.user || profile;
+      const avatarUrl = user.avatar || user.avatarUrl || user.profileImage;
+      const nextFullName = user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      const nextEmail = user.email;
+      const nextPhone = user.phone;
+
+      setAccountData((prev) => {
+        const resolvedFullName = nextFullName || prev.fullName;
+        const resolvedEmail = nextEmail || prev.email;
+        const resolvedPhone = nextPhone || prev.phone;
+        const resolvedAvatar = avatarUrl || prev.avatar;
+
+        if (
+          prev.fullName === resolvedFullName &&
+          prev.email === resolvedEmail &&
+          prev.phone === resolvedPhone &&
+          prev.avatar === resolvedAvatar
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          fullName: resolvedFullName,
+          email: resolvedEmail,
+          phone: resolvedPhone,
+          avatar: resolvedAvatar,
+        };
+      });
     }
   }, [profile]);
 
@@ -43,12 +81,15 @@ export const VendorSettingsPage = () => {
     }));
   };
 
-  const handleSaveAccount = async () => {
+  const handleSaveAccount = async (overrideData) => {
     try {
+      const targetData = { ...accountData, ...(overrideData || {}) };
       await updateProfile({
-        fullName: accountData.fullName,
-        phone: accountData.phone,
-        avatar: accountData.avatar,
+        fullName: targetData.fullName,
+        phone: targetData.phone,
+        avatar: targetData.avatar,
+        avatarUrl: targetData.avatar,
+        profileImage: targetData.avatar,
       });
     } catch {
       // Error notifications handled by hook

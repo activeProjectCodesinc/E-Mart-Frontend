@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { useApiMutation } from '@/hooks/useApiMutation';
 import { apiRoutes } from '@/services/apiRoutes';
@@ -19,6 +20,17 @@ export const useSettings = () => {
     {
       invalidateKey: QUERY_KEYS.AUTH.PROFILE,
       successMessage: 'Account settings saved successfully!',
+      onSuccess: (res) => {
+        const updatedUser = res?.data?.user || res?.data || res?.user;
+        if (updatedUser) {
+          try {
+            const current = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            localStorage.setItem('adminUser', JSON.stringify({ ...current, ...updatedUser }));
+          } catch {
+            // ignore
+          }
+        }
+      },
     }
   );
 
@@ -64,8 +76,29 @@ export const useSettings = () => {
     }
   );
 
+  const normalizedProfile = useMemo(() => {
+    const rawData = profileQuery.data;
+    const user =
+      rawData?.data?.user ||
+      rawData?.user ||
+      rawData?.data ||
+      rawData;
+
+    if (!user || typeof user !== 'object' || (!user.id && !user.email && !user.fullName && !user.firstName)) {
+      return null;
+    }
+
+    return {
+      ...user,
+      user,
+      avatar: user.avatar || user.avatarUrl || user.profileImage || '',
+      avatarUrl: user.avatarUrl || user.avatar || user.profileImage || '',
+      profileImage: user.profileImage || user.avatar || user.avatarUrl || '',
+    };
+  }, [profileQuery.data]);
+
   return {
-    profile: profileQuery.data?.data,
+    profile: normalizedProfile,
     isLoadingProfile: profileQuery.isLoading,
     profileError: profileQuery.error,
     refetchProfile: profileQuery.refetch,

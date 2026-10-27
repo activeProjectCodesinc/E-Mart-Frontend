@@ -2,6 +2,8 @@ export const apiRoutes = {
   auth: {
     login: '/auth/login',
     adminLogin: '/auth/admin/login',
+    refresh: '/auth/refresh',
+    adminRefresh: '/auth/admin/refresh',
     adminVerify2fa: '/auth/admin/2fa/verify',
     admin2faStatus: '/auth/admin/2fa/status',
     admin2faSetup: '/auth/admin/2fa/setup',

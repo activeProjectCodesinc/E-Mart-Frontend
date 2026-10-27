@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { BellIcon, MenuIcon, ChevronDownIcon, SettingsIcon, LockIcon } from '@/icons';
 import { toast } from '@/utils/toast';
 import { post } from '@/services/apiServices';
+import { useSettings } from '@/hooks/useSettings';
+import { getRefreshToken, clearAllAuth } from '@/services/tokenService';
 
 export const AdminHeader = ({ onOpenSidebar }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const dropdownRef = useRef(null);
+  const { profile } = useSettings();
 
   const adminUser = (() => {
     try {
@@ -18,8 +21,16 @@ export const AdminHeader = ({ onOpenSidebar }) => {
     }
   })();
 
-  const adminName = adminUser.fullName || adminUser.firstName || 'Admin';
-  const adminEmail = adminUser.email || 'admin@emart.com';
+  const currentUser = profile?.user || profile || adminUser;
+  const adminName = currentUser.fullName || currentUser.firstName || adminUser.fullName || adminUser.firstName || 'Admin';
+  const adminEmail = currentUser.email || adminUser.email || 'admin@emart.com';
+  const adminAvatar =
+    currentUser.avatar ||
+    currentUser.avatarUrl ||
+    currentUser.profileImage ||
+    adminUser.avatar ||
+    adminUser.avatarUrl ||
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80';
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -34,15 +45,10 @@ export const AdminHeader = ({ onOpenSidebar }) => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        await post('/auth/logout', { refreshToken }).catch(() => {});
-      }
+      const refreshToken = getRefreshToken();
+      await post('/auth/logout', refreshToken ? { refreshToken } : {}).catch(() => {});
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('adminUser');
-      localStorage.removeItem('adminAccess');
+      clearAllAuth();
       setIsLoggingOut(false);
       setIsDropdownOpen(false);
       toast.success('Logged out successfully');
@@ -82,9 +88,14 @@ export const AdminHeader = ({ onOpenSidebar }) => {
             className="flex items-center gap-3 pl-3 border-l border-slate-200 hover:opacity-85 transition-opacity cursor-pointer text-left"
           >
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80"
-              alt="Super Admin"
+              src={adminAvatar}
+              alt={adminName}
               className="w-9 h-9 rounded-full object-cover border border-orange-200 shadow-2xs"
+              onError={(e) => {
+                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  adminName
+                )}&background=f97316&color=fff`;
+              }}
             />
             <div className="hidden sm:block">
               <span className="text-xs font-semibold text-slate-900 block leading-tight">{adminName}</span>

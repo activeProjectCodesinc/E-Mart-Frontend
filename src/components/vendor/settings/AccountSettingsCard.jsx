@@ -24,8 +24,20 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
     formData.append('file', file);
     try {
       const res = await uploadAvatar(formData);
-      if (res?.data?.url) {
-        onChange('avatar', res.data.url);
+      const uploadedUrl =
+        res?.data?.url ||
+        res?.data?.secure_url ||
+        res?.data?.avatarUrl ||
+        res?.data?.profileImage ||
+        res?.url ||
+        res?.secure_url ||
+        res?.avatarUrl;
+
+      if (uploadedUrl) {
+        onChange('avatar', uploadedUrl);
+        if (typeof onSave === 'function') {
+          onSave({ avatar: uploadedUrl });
+        }
       }
     } catch {
       // Handled by hook
@@ -57,9 +69,19 @@ export const AccountSettingsCard = ({ data, onChange, onSave, isSaving = false }
           <div className="flex flex-col items-center gap-2 shrink-0">
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-orange-100 shadow-xs bg-slate-100 relative">
               <img
-                src={data.avatar}
-                alt={data.fullName}
+                src={
+                  data.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    data.fullName || 'Admin'
+                  )}&background=f97316&color=fff`
+                }
+                alt={data.fullName || 'User Avatar'}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    data.fullName || 'Admin'
+                  )}&background=f97316&color=fff`;
+                }}
               />
               {isUploadingAvatar && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-[10px] font-semibold">

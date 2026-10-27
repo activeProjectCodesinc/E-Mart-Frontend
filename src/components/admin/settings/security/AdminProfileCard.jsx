@@ -1,11 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/utils/toast';
 import { LockIcon } from '@/icons';
 import { INITIAL_ADMIN_PROFILE } from '@/mock/admin/adminSettings.mock';
+import { useSettings } from '@/hooks/useSettings';
 
 export const AdminProfileCard = () => {
+  const { profile: serverProfile, updateProfile, isUpdatingProfile } = useSettings();
   const [profile, setProfile] = useState(INITIAL_ADMIN_PROFILE);
   const [savedProfile, setSavedProfile] = useState(INITIAL_ADMIN_PROFILE);
+
+  useEffect(() => {
+    if (serverProfile) {
+      const user = serverProfile.user || serverProfile;
+      const initial = {
+        displayName: user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || INITIAL_ADMIN_PROFILE.displayName,
+        email: user.email || INITIAL_ADMIN_PROFILE.email,
+        phoneNumber: user.phone || INITIAL_ADMIN_PROFILE.phoneNumber,
+        role: user.userType === 'admin' ? 'Super Administrator' : (user.userType || INITIAL_ADMIN_PROFILE.role),
+      };
+
+      setProfile((prev) => {
+        if (
+          prev.displayName === initial.displayName &&
+          prev.email === initial.email &&
+          prev.phoneNumber === initial.phoneNumber &&
+          prev.role === initial.role
+        ) {
+          return prev;
+        }
+        return initial;
+      });
+
+      setSavedProfile((prev) => {
+        if (
+          prev.displayName === initial.displayName &&
+          prev.email === initial.email &&
+          prev.phoneNumber === initial.phoneNumber &&
+          prev.role === initial.role
+        ) {
+          return prev;
+        }
+        return initial;
+      });
+    }
+  }, [serverProfile]);
 
   const handleChange = (field, value) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
@@ -16,10 +54,17 @@ export const AdminProfileCard = () => {
     toast.info('Profile changes discarded');
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSavedProfile(profile);
-    toast.success('Admin profile saved successfully!');
+    try {
+      await updateProfile({
+        fullName: profile.displayName,
+        phone: profile.phoneNumber,
+      });
+      setSavedProfile(profile);
+    } catch {
+      // Error notifications handled by hook
+    }
   };
 
   return (
@@ -96,9 +141,10 @@ export const AdminProfileCard = () => {
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold shadow-xs shadow-orange-500/25 active:scale-95 transition-all cursor-pointer"
+            disabled={isUpdatingProfile}
+            className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold shadow-xs shadow-orange-500/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
-            Save profile
+            {isUpdatingProfile ? 'Saving...' : 'Save profile'}
           </button>
         </div>
       </form>

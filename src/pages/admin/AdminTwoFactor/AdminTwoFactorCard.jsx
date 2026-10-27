@@ -7,6 +7,7 @@ import { Button } from '@/components/common/Button';
 import { toast } from '@/utils/toast';
 import { slideUp } from '@/animation/animations';
 import { post } from '@/services/apiServices';
+import { setAccessToken, setRefreshToken } from '@/services/tokenService';
 
 export const AdminTwoFactorCard = () => {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ export const AdminTwoFactorCard = () => {
         const user = res?.data?.user || res?.user;
         const adminAccess = res?.data?.admin || res?.admin;
 
-        if (tokens?.accessToken) localStorage.setItem('token', tokens.accessToken);
-        if (tokens?.refreshToken) localStorage.setItem('refreshToken', tokens.refreshToken);
+        if (tokens?.accessToken) setAccessToken(tokens.accessToken);
+        if (tokens?.refreshToken) setRefreshToken(tokens.refreshToken);
         if (user) localStorage.setItem('adminUser', JSON.stringify(user));
         if (adminAccess) localStorage.setItem('adminAccess', JSON.stringify(adminAccess));
       }

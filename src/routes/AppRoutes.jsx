@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { vendorRoutes } from './vendor.routes';
 import { adminRoutes } from './admin.routes';
 import Toaster from '@/components/common/Toaster';
+import { useAuthInit } from '@/hooks/useAuthInit';
 
 const RouteLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -11,6 +12,12 @@ const RouteLoader = () => (
 );
 
 export const AppRoutes = () => {
+  const { isInitializing } = useAuthInit();
+
+  if (isInitializing) {
+    return <RouteLoader />;
+  }
+
   return (
     <BrowserRouter>
       <Toaster />
