@@ -31,7 +31,7 @@ export const VendorSettingsPage = () => {
         fullName: profile.fullName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || prev.fullName,
         email: profile.email || prev.email,
         phone: profile.phone || prev.phone,
-        avatar: profile.avatar || prev.avatar,
+        avatar: profile.avatar || profile.avatarUrl || profile.profileImage || prev.avatar,
       }));
     }
   }, [profile]);
@@ -79,7 +79,10 @@ export const VendorSettingsPage = () => {
           isSaving={isUpdatingProfile}
         />
 
-        <PasswordSecurityCard hideCurrentPassword={isAdminStore} />
+        <PasswordSecurityCard
+          hideCurrentPassword={isAdminStore}
+          initialTwoFactor={profile?.twoFactorEnabled}
+        />
 
         {!isAdminStore && (
           <PaymentSettingsCard

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { toast } from '@/utils/toast';
 import { EyeIcon, EyeOffIcon } from '@/icons';
+import { patch } from '@/services/apiServices';
+import { apiRoutes } from '@/services/apiRoutes';
 
 export const ChangePasswordCard = () => {
   const [form, setForm] = useState({
@@ -12,8 +14,9 @@ export const ChangePasswordCard = () => {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.currentPassword || !form.newPassword) {
       toast.error('Please enter your current and new password');
@@ -27,8 +30,26 @@ export const ChangePasswordCard = () => {
       toast.error('New passwords do not match');
       return;
     }
-    toast.success('Password updated successfully! Other sessions will be signed out.');
-    setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+    setIsUpdating(true);
+    try {
+      const res = await patch(apiRoutes.auth.changePassword, {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+      });
+      const newAccessToken = res?.data?.tokens?.accessToken || res?.tokens?.accessToken;
+      if (newAccessToken) {
+        localStorage.setItem('admin_access_token', newAccessToken);
+        localStorage.setItem('accessToken', newAccessToken);
+        localStorage.setItem('token', newAccessToken);
+      }
+      toast.success('Password updated successfully! Other sessions will be signed out.');
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch {
+      // Handled by apiServices
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -144,9 +165,10 @@ export const ChangePasswordCard = () => {
         <div className="flex justify-end pt-2 border-t border-slate-100">
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold shadow-xs shadow-orange-500/25 active:scale-95 transition-all cursor-pointer"
+            disabled={isUpdating}
+            className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-semibold shadow-xs shadow-orange-500/25 active:scale-95 transition-all cursor-pointer"
           >
-            Update password
+            {isUpdating ? 'Updating password...' : 'Update password'}
           </button>
         </div>
       </form>

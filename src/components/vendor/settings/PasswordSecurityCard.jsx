@@ -4,9 +4,10 @@ import { useAnimatedIcon } from '@/utils/useAnimatedIcon';
 import { ShieldAlertIcon, LockIcon, EyeIcon, EyeOffIcon } from '@/icons';
 import { toast } from '@/utils/toast';
 import { TwoFactorModal } from '@/components/admin/settings/security/TwoFactorModal';
-import { get, post } from '@/services/apiServices';
+import { get, post, patch } from '@/services/apiServices';
+import { apiRoutes } from '@/services/apiRoutes';
 
-const PasswordInput = ({ label, value, onChange, placeholder, show, onToggle }) => (
+const PasswordInput = ({ label, value, onChange, placeholder, show, onToggle, disabled }) => (
   <div>
     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
       {label} <span className="text-rose-500">*</span>
@@ -15,9 +16,10 @@ const PasswordInput = ({ label, value, onChange, placeholder, show, onToggle }) 
       <input
         type={show ? 'text' : 'password'}
         value={value}
+        disabled={disabled}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs"
+        className="w-full pl-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-2xs disabled:opacity-60"
       />
       <button
         type="button"
@@ -30,7 +32,7 @@ const PasswordInput = ({ label, value, onChange, placeholder, show, onToggle }) 
   </div>
 );
 
-export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
+export const PasswordSecurityCard = ({ hideCurrentPassword, initialTwoFactor }) => {
   const location = useLocation();
   const shouldHideCurrentPassword =
     hideCurrentPassword !== undefined
@@ -43,14 +45,21 @@ export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(false);
+  const [twoFactor, setTwoFactor] = useState(Boolean(initialTwoFactor));
   const [isDisabling, setIsDisabling] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
+
+  useEffect(() => {
+    if (initialTwoFactor !== undefined) {
+      setTwoFactor(Boolean(initialTwoFactor));
+    }
+  }, [initialTwoFactor]);
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await get('/auth/admin/2fa/status');
+        const res = await get(apiRoutes.auth.admin2faStatus);
         const data = res?.data || res;
         if (data?.enabled !== undefined) setTwoFactor(Boolean(data.enabled));
       } catch {
@@ -67,7 +76,7 @@ export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
       if (!window.confirm('Are you sure you want to disable Two-Factor Authentication?')) return;
       setIsDisabling(true);
       try {
-        await post('/auth/admin/2fa/disable', {});
+        await post(apiRoutes.auth.admin2faDisable, {});
         setTwoFactor(false);
         toast.success('Two-Factor Authentication disabled');
       } catch (err) {
@@ -78,7 +87,7 @@ export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
     }
   };
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (!shouldHideCurrentPassword && !passwords.current) {
       return toast.error('Please enter your current password');
@@ -86,8 +95,26 @@ export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
     if (passwords.newPass.length < 8) return toast.error('New password must be at least 8 characters');
     if (passwords.newPass !== passwords.confirm) return toast.error('Passwords do not match');
 
-    toast.success('Password updated successfully!');
-    setPasswords({ current: '', newPass: '', confirm: '' });
+    setIsUpdatingPassword(true);
+    try {
+      const payload = { newPassword: passwords.newPass };
+      if (!shouldHideCurrentPassword && passwords.current) {
+        payload.currentPassword = passwords.current;
+      }
+      const res = await patch(apiRoutes.auth.changePassword, payload);
+      const newAccessToken = res?.data?.tokens?.accessToken || res?.tokens?.accessToken;
+      if (newAccessToken) {
+        localStorage.setItem('admin_access_token', newAccessToken);
+        localStorage.setItem('accessToken', newAccessToken);
+        localStorage.setItem('token', newAccessToken);
+      }
+      toast.success('Password updated successfully!');
+      setPasswords({ current: '', newPass: '', confirm: '' });
+    } catch {
+      // Error notifications handled by apiServices
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -135,9 +162,10 @@ export const PasswordSecurityCard = ({ hideCurrentPassword }) => {
         />
         <button
           type="submit"
-          className="w-full py-2.5 sm:py-3 bg-orange-500 hover:bg-orange-600 active:scale-98 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm shadow-orange-500/20 transition-all cursor-pointer mt-2"
+          disabled={isUpdatingPassword}
+          className="w-full py-2.5 sm:py-3 bg-orange-500 hover:bg-orange-600 active:scale-98 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-sm shadow-orange-500/20 transition-all cursor-pointer mt-2 disabled:opacity-50"
         >
-          Update Password
+          {isUpdatingPassword ? 'Updating Password...' : 'Update Password'}
         </button>
       </form>
 

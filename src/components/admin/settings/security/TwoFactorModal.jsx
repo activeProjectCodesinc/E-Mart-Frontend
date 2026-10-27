@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from '@/utils/toast';
 import { XIcon, LockIcon } from '@/icons';
 import { post } from '@/services/apiServices';
+import { apiRoutes } from '@/services/apiRoutes';
 
 export const TwoFactorModal = ({ isOpen, onClose, onComplete }) => {
   const [code, setCode] = useState('');
@@ -20,7 +21,7 @@ export const TwoFactorModal = ({ isOpen, onClose, onComplete }) => {
     const fetchSetup = async () => {
       setIsLoading(true);
       try {
-        const res = await post('/auth/admin/2fa/setup');
+        const res = await post(apiRoutes.auth.admin2faSetup);
         const data = res?.data || res;
         setSetupData(data);
       } catch (err) {
@@ -51,7 +52,7 @@ export const TwoFactorModal = ({ isOpen, onClose, onComplete }) => {
     }
     setIsVerifying(true);
     try {
-      await post('/auth/admin/2fa/enable', { code });
+      await post(apiRoutes.auth.admin2faEnable, { code });
       toast.success('Two-factor authentication enabled successfully!');
       onComplete();
       onClose();

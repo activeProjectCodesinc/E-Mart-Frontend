@@ -65,7 +65,7 @@ export const useSettings = () => {
   );
 
   return {
-    profile: profileQuery.data?.data,
+    profile: profileQuery.data?.data?.user || profileQuery.data?.data,
     isLoadingProfile: profileQuery.isLoading,
     profileError: profileQuery.error,
     refetchProfile: profileQuery.refetch,
