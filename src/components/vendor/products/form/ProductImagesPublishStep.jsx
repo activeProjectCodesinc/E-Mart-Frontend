@@ -9,10 +9,15 @@ export const ProductImagesPublishStep = ({
   onPublish,
   onBack,
   isSubmitting = false,
+  onDeleteExistingImage,
 }) => {
   return (
     <div className="space-y-6">
-      <ProductImagesCard formData={formData} onChange={onChange} />
+      <ProductImagesCard
+        formData={formData}
+        onChange={onChange}
+        onDeleteExistingImage={onDeleteExistingImage}
+      />
       <ProductAdditionalInfoCard formData={formData} onChange={onChange} />
       <ProductPublishCard formData={formData} onChange={onChange} />
 

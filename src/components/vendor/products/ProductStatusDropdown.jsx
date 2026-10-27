@@ -24,7 +24,22 @@ const STATUS_CONFIGS = {
 };
 
 export const ProductStatusDropdown = ({ status, onClick }) => {
-  const config = STATUS_CONFIGS[status] || STATUS_CONFIGS.Active;
+  const raw =
+    typeof status === 'object' && status !== null
+      ? (status.name || status.title || 'Active')
+      : (status || 'Active');
+
+  const normalized =
+    String(raw).charAt(0).toUpperCase() + String(raw).slice(1).replace(/_/g, ' ');
+
+  const config =
+    STATUS_CONFIGS[normalized] ||
+    STATUS_CONFIGS[
+      Object.keys(STATUS_CONFIGS).find(
+        (k) => k.toLowerCase() === normalized.toLowerCase()
+      )
+    ] ||
+    STATUS_CONFIGS.Active;
 
   return (
     <button
@@ -33,7 +48,7 @@ export const ProductStatusDropdown = ({ status, onClick }) => {
       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 ${config.badge}`}
       title="Click to update status"
     >
-      <span>{status}</span>
+      <span>{normalized}</span>
       <ChevronDownIcon size={12} className="stroke-[2.5] opacity-75" />
     </button>
   );

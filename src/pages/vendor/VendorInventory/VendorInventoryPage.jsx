@@ -92,8 +92,11 @@ export const VendorInventoryPage = () => {
           unit: unitStr,
           stock: stockNum,
           lowStockAlert: lowAlert,
-          status: derivedStatus,
-          image: item.imageUrl || item.image || 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
+          image:
+            (Array.isArray(item.images) && (item.images.find((img) => img.isMain)?.url || item.images[0]?.url)) ||
+            item.imageUrl ||
+            item.image ||
+            'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=100',
           category: categoryStr,
           price: Number(item.price ?? item.sellingPrice ?? item.salePrice ?? 0),
           costPrice: Number(item.costPrice ?? item.cost ?? item.purchasePrice ?? item.price ?? 0),

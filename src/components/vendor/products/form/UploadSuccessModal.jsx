@@ -30,7 +30,11 @@ export const UploadSuccessModal = ({
 
         <div className="flex items-center gap-3 p-3 mt-4 text-left rounded-xl bg-slate-50 border border-slate-100">
           <img
-            src={product.image || (product.images && product.images[0]) || 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=120'}
+            src={
+              product.image ||
+              (Array.isArray(product.images) && (product.images[0]?.url || (typeof product.images[0] === 'string' && product.images[0]))) ||
+              'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=120'
+            }
             alt={product.name}
             className="w-12 h-12 rounded-lg object-cover bg-white border border-slate-200 shrink-0"
           />
