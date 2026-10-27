@@ -15,11 +15,10 @@ export const POS_BRANCHES = [
 ];
 
 export const INITIAL_CUSTOMERS = [
-  { id: 'c1', name: 'Annette Black', phone: '+92 300 1234567', email: 'annette@example.com' },
-  { id: 'c2', name: 'Jane Cooper', phone: '+92 321 9876543', email: 'jane@example.com' },
-  { id: 'c3', name: 'Cody Fisher', phone: '+92 333 4567890', email: 'cody@example.com' },
-  { id: 'c4', name: 'Wade Warren', phone: '+92 345 6789012', email: 'wade@example.com' },
-  { id: 'c5', name: 'Walk-in Customer', phone: '—', email: 'walkin@store.com' },
+  { id: 'c1', name: 'Annette Black', phone: '+92 300 1234567', email: 'annette@example.com', addressLine: 'House 14, Street 3, Block G', city: 'Lahore', area: 'Gulberg III' },
+  { id: 'c2', name: 'Jane Cooper', phone: '+92 321 9876543', email: 'jane@example.com', addressLine: 'House 52, Sector C', city: 'Lahore', area: 'DHA Phase 5' },
+  { id: 'c3', name: 'Cody Fisher', phone: '+92 333 4567890', email: 'cody@example.com', addressLine: 'Plot 88, Commercial Lane', city: 'Lahore', area: 'Model Town' },
+  { id: 'c4', name: 'Wade Warren', phone: '+92 345 6789012', email: 'wade@example.com', addressLine: 'House 12-B, Main Street', city: 'Lahore', area: 'Johar Town' },
 ];
 
 export const POS_PRODUCTS = [

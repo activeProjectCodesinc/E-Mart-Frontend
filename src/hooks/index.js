@@ -7,4 +7,5 @@ export * from './useAdminOrders';
 export * from './useAdminInventory';
 export * from './useAdminStore';
 export * from './useCategories';
+export * from './useAdminPos';
 export * from './useAuthInit';

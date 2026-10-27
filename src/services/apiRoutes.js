@@ -43,6 +43,14 @@ export const apiRoutes = {
     },
     store: {
       management: '/admin/store/management',
+      pos: {
+        products: '/admin/store/pos/products',
+        order: '/admin/store/pos/order',
+      },
+    },
+    customers: {
+      base: '/admin/customers',
+      detail: (id) => `/admin/customers/${id}`,
     },
     settings: '/admin/settings',
     supportContact: '/admin/settings/support',

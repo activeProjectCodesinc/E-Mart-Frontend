@@ -1,7 +1,18 @@
 import { PlusIcon } from '@/icons';
 
 export const PosProductCard = ({ product, onAddToCart }) => {
-  const isOutOfStock = !product.inStock;
+  const isOutOfStock =
+    product.inStock !== undefined
+      ? !product.inStock
+      : product.stock !== undefined
+      ? Number(product.stock) <= 0
+      : false;
+
+  const imageUrl =
+    product.image ||
+    product.imageUrl ||
+    (Array.isArray(product.images) && (product.images[0]?.url || product.images[0])) ||
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=240&auto=format&fit=crop&q=80';
 
   return (
     <div
@@ -15,7 +26,7 @@ export const PosProductCard = ({ product, onAddToCart }) => {
       <div>
         <div className="relative w-full aspect-4/3 rounded-xl overflow-hidden bg-slate-50 mb-2.5">
           <img
-            src={product.image}
+            src={imageUrl}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
