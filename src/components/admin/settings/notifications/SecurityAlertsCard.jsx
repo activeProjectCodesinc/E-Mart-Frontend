@@ -25,7 +25,7 @@ export const SecurityAlertsCard = () => {
             Delivered in-app and by email. These alerts cannot be disabled to help keep your account and marketplace secure.
           </p>
         </div>
-        <LockIcon className="w-4 h-4 text-slate-400 shrink-0" />
+        <LockIcon size={16} className="text-slate-400 shrink-0" animateOnHover={false} />
       </div>
     </div>
   );

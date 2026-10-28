@@ -68,9 +68,9 @@ export const TwoFactorModal = ({ isOpen, onClose, onComplete }) => {
       <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/80 flex items-center justify-center text-orange-600">
-              <LockIcon className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/80 flex items-center justify-center text-orange-600 shrink-0">
+              <LockIcon size={18} animateOnHover={false} />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">
@@ -84,7 +84,7 @@ export const TwoFactorModal = ({ isOpen, onClose, onComplete }) => {
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <XIcon className="w-5 h-5" />
+            <XIcon size={18} />
           </button>
         </div>
 

@@ -71,7 +71,7 @@ export const AddOverrideModal = ({ isOpen, onClose, onSave, initialData }) => {
             onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <XIcon className="w-5 h-5" />
+            <XIcon size={18} />
           </button>
         </div>
 

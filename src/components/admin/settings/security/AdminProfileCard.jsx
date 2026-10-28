@@ -126,7 +126,7 @@ export const AdminProfileCard = () => {
 
         {/* System role info */}
         <div className="flex items-center gap-2 pt-1 text-xs text-slate-500">
-          <LockIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <LockIcon size={14} className="text-slate-400 shrink-0" animateOnHover={false} />
           <span>{profile.role}</span>
         </div>
 

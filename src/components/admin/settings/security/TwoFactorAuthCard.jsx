@@ -74,7 +74,7 @@ export const TwoFactorAuthCard = ({
             disabled={isLoading}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all cursor-pointer shrink-0 disabled:opacity-50"
           >
-            <LockIcon className="w-3.5 h-3.5" />
+            <LockIcon size={14} animateOnHover={false} />
             <span>{isLoading ? 'Disabling...' : 'Turn off Two-Factor'}</span>
           </button>
         ) : (
@@ -84,7 +84,7 @@ export const TwoFactorAuthCard = ({
             disabled={isLoading}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold shadow-xs shadow-orange-500/25 active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
           >
-            <LockIcon className="w-3.5 h-3.5" />
+            <LockIcon size={14} animateOnHover={false} />
             <span>Set up two-factor</span>
           </button>
         )}
