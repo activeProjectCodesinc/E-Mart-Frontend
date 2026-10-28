@@ -8,7 +8,12 @@ import InventoryTable from '@/components/vendor/inventory/InventoryTable';
 import StockUpdateModal from '@/components/vendor/inventory/StockUpdateModal';
 import CsvValidationModal from '@/components/vendor/inventory/CsvValidationModal';
 import ProductsPagination from '@/components/vendor/products/ProductsPagination';
-import { useAdminInventory, useAdjustStock, useDebounce } from '@/hooks';
+import {
+  useAdminInventory,
+  useAdjustStock,
+  useCommitInventoryImport,
+  useDebounce,
+} from '@/hooks';
 
 export const VendorInventoryPage = () => {
   const navigate = useNavigate();
@@ -32,6 +37,7 @@ export const VendorInventoryPage = () => {
 
   const { inventory: apiInventory, meta, isLoading } = useAdminInventory(apiFilters);
   const { mutate: adjustStock, isPending: isAdjusting } = useAdjustStock();
+  const { mutate: commitImport, isPending: isCommittingImport } = useCommitInventoryImport();
 
   const inventoryItems = useMemo(() => {
     if (apiInventory && Array.isArray(apiInventory) && apiInventory.length > 0) {
@@ -176,6 +182,31 @@ export const VendorInventoryPage = () => {
     setActiveCsvFile(file || { name: 'inventory_stock_oct_01.csv' });
   };
 
+  const handleImportValidRows = (validRows) => {
+    if (!validRows || validRows.length === 0) return;
+
+    const items = validRows.map((r) => ({
+      productId: r.productId,
+      variantId: r.variantId,
+      sku: r.sku,
+      quantity: r.quantity,
+      type: 'add',
+      note: r.notes || 'CSV Bulk Import',
+    }));
+
+    commitImport(
+      { items },
+      {
+        onSuccess: () => {
+          setActiveCsvFile(null);
+        },
+        onError: () => {
+          setActiveCsvFile(null);
+        },
+      }
+    );
+  };
+
   return (
     <div className={`space-y-4 sm:space-y-5 transition-opacity ${isLoading ? 'opacity-80' : 'opacity-100'}`}>
       <InventoryHeader />
@@ -191,7 +222,7 @@ export const VendorInventoryPage = () => {
           setStockFilter(s);
           setCurrentPage(1);
         }}
-        onOpenCsvModal={() => handleOpenCsvValidation(null)}
+        onOpenCsvModal={(file) => handleOpenCsvValidation(file)}
       />
 
       <InventoryTable
@@ -223,8 +254,11 @@ export const VendorInventoryPage = () => {
       <CsvValidationModal
         isOpen={Boolean(activeCsvFile)}
         file={activeCsvFile}
+        inventoryItems={inventoryItems}
+        isCommitting={isCommittingImport}
         onClose={() => setActiveCsvFile(null)}
         onBack={() => setActiveCsvFile(null)}
+        onImportSuccess={handleImportValidRows}
       />
     </div>
   );
