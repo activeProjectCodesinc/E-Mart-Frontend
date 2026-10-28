@@ -9,10 +9,11 @@ import { post, del } from '@/services/apiServices';
 import { getAccessToken } from '@/services/tokenService';
 import { playNotificationSound } from '@/utils/sound';
 import { toast } from '@/utils/toast';
+import baseURL from '@/services/apiBaseURL';
 
 /**
  * Socket URL resolution:
- * Connects to port 4000 or VITE_SOCKET_URL
+ * Resolves to VITE_SOCKET_URL, or derives from baseURL (e.g. https://emart.oneclickexperts.com)
  */
 const getSocketUrl = (namespace = '/vendor') => {
   const envUrl = import.meta.env.VITE_SOCKET_URL;
@@ -20,7 +21,17 @@ const getSocketUrl = (namespace = '/vendor') => {
     const clean = envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
     return `${clean}${namespace}`;
   }
-  return `http://localhost:4000${namespace}`;
+
+  if (baseURL && typeof baseURL === 'string' && baseURL.startsWith('http')) {
+    try {
+      const parsed = new URL(baseURL);
+      return `${parsed.origin}${namespace}`;
+    } catch {
+      // ignore parsing error
+    }
+  }
+
+  return `https://emart.oneclickexperts.com${namespace}`;
 };
 
 export const useStoreNotifications = (filters = {}) => {
