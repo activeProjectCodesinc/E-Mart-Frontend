@@ -10,3 +10,4 @@ export * from './useCategories';
 export * from './useAdminPos';
 export * from './useAuthInit';
 export * from './useStoreNotifications';
+export * from './useDebounce';

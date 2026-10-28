@@ -5,6 +5,7 @@ import { BannersFilters } from './banners/BannersFilters';
 import { BannersTable } from './banners/BannersTable';
 import { BannerModal } from './banners/BannerModal';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useDebounce } from '@/hooks/useDebounce';
 import { apiRoutes } from '@/services/apiRoutes';
 import { QUERY_KEYS } from '@/services/queryKeys';
 import { post, put, patch, del } from '@/services/apiServices';
@@ -18,6 +19,7 @@ export const BannerTabContent = ({
   const queryClient = useQueryClient();
   const [localBanners, setLocalBanners] = useState(INITIAL_BANNERS);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [selectedPlacement, setSelectedPlacement] = useState('All placements');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
 
@@ -29,8 +31,8 @@ export const BannerTabContent = ({
   const queryKey = QUERY_KEYS.ADMIN?.STORE?.PROMOTIONS?.BANNERS?.LIST({
     selectedPlacement,
     selectedStatus,
-    searchQuery,
-  }) || ['admin', 'store', 'promotions', 'banners', { selectedPlacement, selectedStatus, searchQuery }];
+    searchQuery: debouncedSearch,
+  }) || ['admin', 'store', 'promotions', 'banners', { selectedPlacement, selectedStatus, searchQuery: debouncedSearch }];
 
   const bannersUrl =
     apiRoutes.admin?.store?.promotions?.banners?.base ||
@@ -43,7 +45,7 @@ export const BannerTabContent = ({
       params: {
         placement: selectedPlacement !== 'All placements' ? selectedPlacement : undefined,
         status: selectedStatus !== 'All statuses' ? selectedStatus : undefined,
-        q: searchQuery.trim() || undefined,
+        q: debouncedSearch.trim() || undefined,
       },
       retry: 1,
     }

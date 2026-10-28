@@ -8,12 +8,13 @@ import InventoryTable from '@/components/vendor/inventory/InventoryTable';
 import StockUpdateModal from '@/components/vendor/inventory/StockUpdateModal';
 import CsvValidationModal from '@/components/vendor/inventory/CsvValidationModal';
 import ProductsPagination from '@/components/vendor/products/ProductsPagination';
-import { useAdminInventory, useAdjustStock } from '@/hooks';
+import { useAdminInventory, useAdjustStock, useDebounce } from '@/hooks';
 
 export const VendorInventoryPage = () => {
   const navigate = useNavigate();
   const { getRoute } = usePortalBase();
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [stockFilter, setStockFilter] = useState('All Products');
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,9 +26,9 @@ export const VendorInventoryPage = () => {
     if (stockFilter !== 'All Products') {
       f.status = stockFilter.toLowerCase().replace(/\s+/g, '_');
     }
-    if (searchQuery.trim()) f.q = searchQuery.trim();
+    if (debouncedSearchQuery.trim()) f.q = debouncedSearchQuery.trim();
     return f;
-  }, [currentPage, stockFilter, searchQuery]);
+  }, [currentPage, stockFilter, debouncedSearchQuery]);
 
   const { inventory: apiInventory, meta, isLoading } = useAdminInventory(apiFilters);
   const { mutate: adjustStock, isPending: isAdjusting } = useAdjustStock();

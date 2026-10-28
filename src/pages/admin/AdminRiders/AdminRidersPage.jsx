@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { fadeIn } from '@/animation/animations';
+import { useDebounce } from '@/hooks';
 import {
   getRiders,
   getRiderStats,
@@ -18,6 +19,7 @@ export const AdminRidersPage = () => {
     zone: 'All Zones',
     vehicle: 'All Vehicles',
   });
+  const debouncedSearch = useDebounce(filters.search, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -33,8 +35,8 @@ export const AdminRidersPage = () => {
 
   const filteredRiders = useMemo(() => {
     return riders.filter((r) => {
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
         const matchesName = r.name?.toLowerCase().includes(query);
         const matchesFullName = r.fullName?.toLowerCase().includes(query);
         const matchesPhone = r.phone?.toLowerCase().includes(query);
@@ -67,7 +69,7 @@ export const AdminRidersPage = () => {
 
       return true;
     });
-  }, [riders, filters]);
+  }, [riders, filters.status, filters.zone, filters.vehicle, debouncedSearch]);
 
   // Paginated slice for current page
   const paginatedRiders = useMemo(() => {

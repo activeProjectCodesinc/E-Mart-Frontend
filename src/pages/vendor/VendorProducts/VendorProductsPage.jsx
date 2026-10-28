@@ -6,7 +6,7 @@ import ProductsFilterBar from '@/components/vendor/products/ProductsFilterBar';
 import ProductsTable from '@/components/vendor/products/ProductsTable';
 import ProductsPagination from '@/components/vendor/products/ProductsPagination';
 import UpdateProductStatusModal from '@/components/vendor/products/UpdateProductStatusModal';
-import { useAdminProducts, useUpdateProductStatus, useDeleteProduct } from '@/hooks';
+import { useAdminProducts, useUpdateProductStatus, useDeleteProduct, useDebounce } from '@/hooks';
 import { usePortalBase } from '@/utils/usePortalBase';
 
 export const VendorProductsPage = () => {
@@ -14,6 +14,7 @@ export const VendorProductsPage = () => {
   const { getRoute } = usePortalBase();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -22,9 +23,9 @@ export const VendorProductsPage = () => {
   const apiFilters = useMemo(() => {
     const f = { page: currentPage, pageSize: 20 };
     if (activeTab !== 'all') f.status = activeTab.replace('-', '_');
-    if (searchQuery.trim()) f.q = searchQuery.trim();
+    if (debouncedSearchQuery.trim()) f.q = debouncedSearchQuery.trim();
     return f;
-  }, [currentPage, activeTab, searchQuery]);
+  }, [currentPage, activeTab, debouncedSearchQuery]);
 
   const { products: apiProducts, meta, counts: apiCounts, isLoading } = useAdminProducts(apiFilters);
   const { mutate: updateStatus } = useUpdateProductStatus();

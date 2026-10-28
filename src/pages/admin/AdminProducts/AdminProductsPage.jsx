@@ -15,16 +15,19 @@ import RemoveProductModal from '@/components/admin/products/RemoveProductModal';
 import AdminProductsTabs from './components/AdminProductsTabs';
 import { SearchIcon } from '@/icons';
 import { toast } from '@/utils/toast';
+import { useDebounce } from '@/hooks';
 
 export const AdminProductsPage = () => {
   const [activeTab, setActiveTab] = useState('by-vendor');
   const [vendorSearch, setVendorSearch] = useState('');
+  const debouncedVendorSearch = useDebounce(vendorSearch, 300);
 
   const [rawProducts] = useState(() => getProducts());
   const [removedIds, setRemovedIds] = useState(new Set());
   const products = useMemo(() => rawProducts.filter((p) => !removedIds.has(p.id)), [rawProducts, removedIds]);
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [category, setCategory] = useState('All Categories');
   const [vendor, setVendor] = useState('All Vendors');
   const [status, setStatus] = useState('All Status');
@@ -35,15 +38,15 @@ export const AdminProductsPage = () => {
   const [productToDelete, setProductToDelete] = useState(null);
 
   const filteredVendors = useMemo(() => {
-    if (!vendorSearch.trim()) return VENDOR_PRODUCTS_SUMMARY;
-    const q = vendorSearch.toLowerCase();
+    if (!debouncedVendorSearch.trim()) return VENDOR_PRODUCTS_SUMMARY;
+    const q = debouncedVendorSearch.toLowerCase();
     return VENDOR_PRODUCTS_SUMMARY.filter(
       (v) =>
         v.vendorName.toLowerCase().includes(q) ||
         v.vendorCode.toLowerCase().includes(q) ||
         v.location.toLowerCase().includes(q)
     );
-  }, [vendorSearch]);
+  }, [debouncedVendorSearch]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -51,8 +54,8 @@ export const AdminProductsPage = () => {
       if (vendor !== 'All Vendors' && p.vendor !== vendor) return false;
       if (status !== 'All Status' && p.status !== status) return false;
 
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         const matchesName = p.name.toLowerCase().includes(q);
         const matchesCode = p.code.toLowerCase().includes(q);
         const matchesVendor = p.vendor.toLowerCase().includes(q);
@@ -60,7 +63,7 @@ export const AdminProductsPage = () => {
       }
       return true;
     });
-  }, [products, category, vendor, status, search]);
+  }, [products, category, vendor, status, debouncedSearch]);
 
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * pageSize;

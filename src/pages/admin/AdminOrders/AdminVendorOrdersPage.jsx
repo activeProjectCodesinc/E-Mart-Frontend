@@ -16,6 +16,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@/icons';
+import { useDebounce } from '@/hooks';
 
 export const AdminVendorOrdersPage = () => {
   const { vendorId } = useParams();
@@ -25,6 +26,7 @@ export const AdminVendorOrdersPage = () => {
   const allOrders = useMemo(() => getOrdersByVendorId(vendorId), [vendorId]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState('All');
   const [paymentFilter, setPaymentFilter] = useState('All');
 
@@ -41,8 +43,8 @@ export const AdminVendorOrdersPage = () => {
       if (paymentFilter !== 'All' && order.paymentStatus !== paymentFilter) {
         return false;
       }
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         const matchesId = order.id.toLowerCase().includes(q) || order.orderId?.toLowerCase().includes(q);
         const matchesCustomer = order.customer?.name.toLowerCase().includes(q);
         const matchesRider = order.rider?.name.toLowerCase().includes(q);
@@ -52,7 +54,7 @@ export const AdminVendorOrdersPage = () => {
       }
       return true;
     });
-  }, [allOrders, statusFilter, paymentFilter, searchTerm]);
+  }, [allOrders, statusFilter, paymentFilter, debouncedSearch]);
 
   const totalOrdersCount = filteredOrders.length;
   const totalPages = Math.ceil(totalOrdersCount / pageSize) || 1;

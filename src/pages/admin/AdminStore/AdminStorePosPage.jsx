@@ -5,6 +5,7 @@ import {
   useStoreCustomers,
   useCategories,
   useAdminStoreProfile,
+  useDebounce,
 } from '@/hooks';
 import { INITIAL_CUSTOMERS, POS_CATEGORIES } from '@/mock/admin/adminPos.mock';
 import PosProductsSection from '@/components/admin/pos/PosProductsSection';
@@ -25,6 +26,7 @@ const WALK_IN_CUSTOMER = {
 export const AdminStorePosPage = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 400);
   const [currentPage, setCurrentPage] = useState(1);
   const [cart, setCart] = useState([]);
   const [localCustomers, setLocalCustomers] = useState([]);
@@ -38,7 +40,7 @@ export const AdminStorePosPage = () => {
     meta,
     isLoading: isLoadingProducts,
   } = usePosProducts({
-    q: search.trim() || undefined,
+    q: debouncedSearch.trim() || undefined,
     categoryId: selectedCategoryId || undefined,
     page: currentPage,
     pageSize: 9,
@@ -272,7 +274,10 @@ export const AdminStorePosPage = () => {
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={setSelectedCategoryId}
             search={search}
-            onSearchChange={setSearch}
+            onSearchChange={(val) => {
+              setSearch(val);
+              setCurrentPage(1);
+            }}
             currentPage={currentPage}
             totalPages={meta?.totalPages || 1}
             onPageChange={setCurrentPage}

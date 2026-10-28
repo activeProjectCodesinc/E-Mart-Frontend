@@ -7,6 +7,7 @@ import { PromotionsTable } from './PromotionsTable';
 import { DealModal } from './DealModal';
 import { DeleteDealModal } from './DeleteDealModal';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useDebounce } from '@/hooks/useDebounce';
 import { apiRoutes } from '@/services/apiRoutes';
 import { QUERY_KEYS } from '@/services/queryKeys';
 import { post, put, patch, del } from '@/services/apiServices';
@@ -17,6 +18,7 @@ export const DealsTabContent = () => {
   const queryClient = useQueryClient();
   const [localDeals, setLocalDeals] = useState(INITIAL_DEALS);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [selectedType, setSelectedType] = useState('All deal types');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,10 +33,10 @@ export const DealsTabContent = () => {
   const queryKey = QUERY_KEYS.ADMIN?.STORE?.PROMOTIONS?.DEALS?.LIST({
     selectedType,
     selectedStatus,
-    searchQuery,
+    searchQuery: debouncedSearch,
     currentPage,
     pageSize,
-  }) || ['admin', 'store', 'promotions', 'deals', { selectedType, selectedStatus, searchQuery, currentPage, pageSize }];
+  }) || ['admin', 'store', 'promotions', 'deals', { selectedType, selectedStatus, searchQuery: debouncedSearch, currentPage, pageSize }];
 
   const dealsUrl =
     apiRoutes.admin?.store?.promotions?.deals?.base ||
@@ -47,7 +49,7 @@ export const DealsTabContent = () => {
       params: {
         dealType: selectedType !== 'All deal types' ? selectedType : undefined,
         status: selectedStatus !== 'All statuses' ? selectedStatus : undefined,
-        q: searchQuery.trim() || undefined,
+        q: debouncedSearch.trim() || undefined,
         page: currentPage,
         pageSize,
       },

@@ -11,6 +11,7 @@ import VendorProductHeaderCard from './components/VendorProductHeaderCard';
 import VendorProductListRow from './components/VendorProductListRow';
 import { ArrowLeftIcon, SearchIcon } from '@/icons';
 import { toast } from '@/utils/toast';
+import { useDebounce } from '@/hooks';
 
 export const AdminVendorProductsPage = () => {
   const { vendorId } = useParams();
@@ -22,6 +23,7 @@ export const AdminVendorProductsPage = () => {
   const allProducts = useMemo(() => rawProducts.filter((p) => !removedIds.has(p.id)), [rawProducts, removedIds]);
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -33,13 +35,13 @@ export const AdminVendorProductsPage = () => {
   const filteredProducts = useMemo(() => {
     return allProducts.filter((p) => {
       if (statusFilter !== 'All' && p.status !== statusFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [allProducts, statusFilter, search]);
+  }, [allProducts, statusFilter, debouncedSearch]);
 
   const totalCount = filteredProducts.length;
   const paginatedProducts = useMemo(() => {

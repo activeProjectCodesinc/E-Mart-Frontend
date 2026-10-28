@@ -7,6 +7,7 @@ import { CouponsTable } from './CouponsTable';
 import { CouponModal } from './CouponModal';
 import { DeleteCouponModal } from './DeleteCouponModal';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useDebounce } from '@/hooks/useDebounce';
 import { apiRoutes } from '@/services/apiRoutes';
 import { QUERY_KEYS } from '@/services/queryKeys';
 import { post, put, patch, del } from '@/services/apiServices';
@@ -17,6 +18,7 @@ export const CouponsTabContent = () => {
   const queryClient = useQueryClient();
   const [localCoupons, setLocalCoupons] = useState(INITIAL_COUPONS);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [selectedType, setSelectedType] = useState('All coupon types');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,10 +33,10 @@ export const CouponsTabContent = () => {
   const queryKey = QUERY_KEYS.ADMIN?.STORE?.PROMOTIONS?.COUPONS?.LIST({
     selectedType,
     selectedStatus,
-    searchQuery,
+    searchQuery: debouncedSearch,
     currentPage,
     pageSize,
-  }) || ['admin', 'store', 'promotions', 'coupons', { selectedType, selectedStatus, searchQuery, currentPage, pageSize }];
+  }) || ['admin', 'store', 'promotions', 'coupons', { selectedType, selectedStatus, searchQuery: debouncedSearch, currentPage, pageSize }];
 
   const couponsUrl =
     apiRoutes.admin?.store?.promotions?.coupons?.base ||
@@ -47,7 +49,7 @@ export const CouponsTabContent = () => {
       params: {
         couponType: selectedType !== 'All coupon types' ? selectedType : undefined,
         status: selectedStatus !== 'All statuses' ? selectedStatus : undefined,
-        q: searchQuery.trim() || undefined,
+        q: debouncedSearch.trim() || undefined,
         page: currentPage,
         pageSize,
       },

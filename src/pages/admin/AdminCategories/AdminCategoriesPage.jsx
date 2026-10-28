@@ -15,10 +15,12 @@ import CategoryModal from '@/components/admin/categories/CategoryModal';
 import DeleteCategoryModal from '@/components/admin/categories/DeleteCategoryModal';
 import { PlusIcon } from '@/icons';
 import { toast } from '@/utils/toast';
+import { useDebounce } from '@/hooks';
 
 export const AdminCategoriesPage = () => {
   const [categoriesList, setCategoriesList] = useState(() => getCategories());
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -38,13 +40,13 @@ export const AdminCategoriesPage = () => {
   const filteredCategories = useMemo(() => {
     return categoriesList.filter((cat) => {
       if (statusFilter !== 'All' && cat.status !== statusFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         return cat.name.toLowerCase().includes(q) || cat.description.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [categoriesList, statusFilter, search]);
+  }, [categoriesList, statusFilter, debouncedSearch]);
 
   const paginatedCategories = useMemo(() => {
     const start = (currentPage - 1) * pageSize;

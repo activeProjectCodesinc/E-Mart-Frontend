@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { fadeIn } from '@/animation/animations';
+import { useDebounce } from '@/hooks';
 import {
   getCustomers,
   getCustomerStats,
@@ -18,6 +19,7 @@ export const AdminCustomersPage = () => {
     city: 'All Cities',
     joinDate: 'All Join Dates',
   });
+  const debouncedSearch = useDebounce(filters.search, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
@@ -33,8 +35,8 @@ export const AdminCustomersPage = () => {
 
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
         const matchesName = c.name?.toLowerCase().includes(query);
         const matchesFullName = c.fullName?.toLowerCase().includes(query);
         const matchesPhone = c.phone?.toLowerCase().includes(query);
@@ -65,7 +67,7 @@ export const AdminCustomersPage = () => {
 
       return true;
     });
-  }, [customers, filters]);
+  }, [customers, filters.status, filters.city, debouncedSearch]);
 
   // Paginated slice for current page
   const paginatedCustomers = useMemo(() => {

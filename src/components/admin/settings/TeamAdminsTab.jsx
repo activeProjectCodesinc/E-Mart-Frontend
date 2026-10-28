@@ -6,10 +6,12 @@ import { TeamAdminsKPIs } from './TeamAdminsKPIs';
 import { TeamAdminsTable } from './TeamAdminsTable';
 import { InviteAdminModal } from './InviteAdminModal';
 import { ChangeRoleModal } from './ChangeRoleModal';
+import { useDebounce } from '@/hooks';
 
 export const TeamAdminsTab = () => {
   const [team, setTeam] = useState(INITIAL_TEAM_ADMINS);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedRole, setSelectedRole] = useState('All roles');
   const [selectedStatus, setSelectedStatus] = useState('All statuses');
 
@@ -66,15 +68,15 @@ export const TeamAdminsTab = () => {
       ) {
         return false;
       }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+      if (debouncedSearchQuery.trim()) {
+        const q = debouncedSearchQuery.toLowerCase().trim();
         const matchesName = member.name.toLowerCase().includes(q);
         const matchesEmail = member.email.toLowerCase().includes(q);
         if (!matchesName && !matchesEmail) return false;
       }
       return true;
     });
-  }, [team, selectedRole, selectedStatus, searchQuery]);
+  }, [team, selectedRole, selectedStatus, debouncedSearchQuery]);
 
   return (
     <div className="space-y-6">

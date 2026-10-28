@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { motion } from 'motion/react';
 import { PlusIcon } from '@/icons';
 import { fadeIn } from '@/animation/animations';
+import { useDebounce } from '@/hooks';
 import VendorStatCards from '@/components/admin/vendors/VendorStatCards';
 import VendorFilterBar from '@/components/admin/vendors/VendorFilterBar';
 import VendorTable from '@/components/admin/vendors/VendorTable';
@@ -10,11 +11,12 @@ import VendorTable from '@/components/admin/vendors/VendorTable';
 export const AdminVendorsPage = () => {
   const vendors = useSelector((state) => state.adminVendors.vendors);
   const filters = useSelector((state) => state.adminVendors.filters);
+  const debouncedSearch = useDebounce(filters.search, 300);
 
   const filteredVendors = useMemo(() => {
     return vendors.filter((v) => {
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
         const matchesName = v.storeName?.toLowerCase().includes(query);
         const matchesOwner = v.ownerName?.toLowerCase().includes(query);
         const matchesEmail = v.email?.toLowerCase().includes(query);
@@ -38,7 +40,7 @@ export const AdminVendorsPage = () => {
 
       return true;
     });
-  }, [vendors, filters]);
+  }, [vendors, filters.status, filters.category, filters.location, debouncedSearch]);
 
   return (
     <motion.div

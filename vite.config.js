@@ -19,12 +19,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://jacob-aftermost-shaina.ngrok-free.dev',
+        target: 'https://emart.oneclickexperts.com',
         changeOrigin: true,
         secure: false,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
       },
     },
   },

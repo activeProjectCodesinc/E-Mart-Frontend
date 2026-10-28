@@ -15,12 +15,14 @@ import ApprovePayoutModal from '@/components/admin/payouts/ApprovePayoutModal';
 import RejectPayoutModal from '@/components/admin/payouts/RejectPayoutModal';
 import { HistoryIcon, ShieldAlertIcon } from '@/icons';
 import { toast } from '@/utils/toast';
+import { useDebounce } from '@/hooks';
 
 export const AdminPayoutsPage = () => {
   const navigate = useNavigate();
   const [payoutsList, setPayoutsList] = useState(() => getPayouts());
   const [statusTab, setStatusTab] = useState('All');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [vendorFilter, setVendorFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
 
@@ -38,13 +40,13 @@ export const AdminPayoutsPage = () => {
       if (statusTab !== 'All' && p.status !== statusTab) return false;
       if (statusFilter !== 'All' && p.status !== statusFilter) return false;
       if (vendorFilter !== 'All' && p.vendor !== vendorFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         return p.vendor.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [payoutsList, statusTab, statusFilter, vendorFilter, search]);
+  }, [payoutsList, statusTab, statusFilter, vendorFilter, debouncedSearch]);
 
   const handleConfirmApprove = (id) => {
     const updated = approvePayoutMock(id);

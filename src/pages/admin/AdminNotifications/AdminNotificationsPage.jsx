@@ -6,12 +6,14 @@ import { NotificationStats } from '@/components/admin/notifications/Notification
 import { NotificationFilters } from '@/components/admin/notifications/NotificationFilters';
 import { NotificationGroup } from '@/components/admin/notifications/NotificationGroup';
 import { NotificationDetailModal } from '@/components/admin/notifications/NotificationDetailModal';
+import { useDebounce } from '@/hooks';
 
 export const AdminNotificationsPage = () => {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread'
   const [activeCategory, setActiveCategory] = useState('All categories');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [btnIconRef, btnTrigger] = useAnimatedIcon();
 
@@ -44,8 +46,8 @@ export const AdminNotificationsPage = () => {
     return notifications.filter((item) => {
       if (activeTab === 'unread' && item.isRead) return false;
       if (activeCategory !== 'All categories' && item.category !== activeCategory) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (debouncedSearchQuery.trim()) {
+        const q = debouncedSearchQuery.toLowerCase();
         const matchesEntity = item.entityId.toLowerCase().includes(q);
         const matchesTitle = item.title.toLowerCase().includes(q);
         const matchesDesc = item.description.toLowerCase().includes(q);
@@ -54,7 +56,7 @@ export const AdminNotificationsPage = () => {
       }
       return true;
     });
-  }, [notifications, activeTab, activeCategory, searchQuery]);
+  }, [notifications, activeTab, activeCategory, debouncedSearchQuery]);
 
   // Group filtered notifications by date
   const groupedNotifications = useMemo(() => {

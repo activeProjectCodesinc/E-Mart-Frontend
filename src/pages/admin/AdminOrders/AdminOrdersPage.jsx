@@ -13,10 +13,12 @@ import OrderDetailModal from '@/components/admin/orders/OrderDetailModal';
 import AdminOrdersTabs from './components/AdminOrdersTabs';
 import AdminOrdersVendorToolbar from './components/AdminOrdersVendorToolbar';
 import AdminOrdersMarketplaceFilters from './components/AdminOrdersMarketplaceFilters';
+import { useDebounce } from '@/hooks';
 
 export const AdminOrdersPage = () => {
   const [activeTab, setActiveTab] = useState('by-vendor');
   const [vendorSearch, setVendorSearch] = useState('');
+  const debouncedVendorSearch = useDebounce(vendorSearch, 300);
   const [vendorFilterStatus, setVendorFilterStatus] = useState('all');
 
   const totalInProgressVendorOrders = useMemo(() => {
@@ -24,6 +26,7 @@ export const AdminOrdersPage = () => {
   }, []);
 
   const [orderSearch, setOrderSearch] = useState('');
+  const debouncedOrderSearch = useDebounce(orderSearch, 300);
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [selectedVendorFilter, setSelectedVendorFilter] = useState('All Vendors');
   const [selectedRiderFilter, setSelectedRiderFilter] = useState('All Riders');
@@ -37,15 +40,15 @@ export const AdminOrdersPage = () => {
       if (vendorFilterStatus === 'in-progress' && !(v.activeOrders > 0)) {
         return false;
       }
-      if (!vendorSearch.trim()) return true;
-      const q = vendorSearch.toLowerCase();
+      if (!debouncedVendorSearch.trim()) return true;
+      const q = debouncedVendorSearch.toLowerCase();
       return (
         v.vendorName.toLowerCase().includes(q) ||
         v.vendorCode.toLowerCase().includes(q) ||
         v.location.toLowerCase().includes(q)
       );
     });
-  }, [vendorSearch, vendorFilterStatus]);
+  }, [debouncedVendorSearch, vendorFilterStatus]);
 
   const tabCounts = useMemo(() => {
     return { allCount: 24, newCount: 5, completedCount: 18, cancelledCount: 2 };
@@ -60,8 +63,8 @@ export const AdminOrdersPage = () => {
       if (selectedVendorFilter !== 'All Vendors' && order.vendor?.name !== selectedVendorFilter) return false;
       if (selectedRiderFilter !== 'All Riders' && order.rider?.name !== selectedRiderFilter) return false;
 
-      if (orderSearch.trim()) {
-        const q = orderSearch.toLowerCase();
+      if (debouncedOrderSearch.trim()) {
+        const q = debouncedOrderSearch.toLowerCase();
         const matchesId = order.id.toLowerCase().includes(q) || order.orderId?.toLowerCase().includes(q);
         const matchesCustomer = order.customer?.name.toLowerCase().includes(q);
         const matchesVendor = order.vendor?.name.toLowerCase().includes(q);
@@ -70,7 +73,7 @@ export const AdminOrdersPage = () => {
       }
       return true;
     });
-  }, [activeTab, selectedStatus, selectedVendorFilter, selectedRiderFilter, orderSearch]);
+  }, [activeTab, selectedStatus, selectedVendorFilter, selectedRiderFilter, debouncedOrderSearch]);
 
   const paginatedOrders = useMemo(() => {
     const start = (ordersPage - 1) * pageSize;

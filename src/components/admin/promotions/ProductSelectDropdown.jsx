@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { PlusIcon, SearchIcon, CheckIcon } from '@/icons';
-import { useAdminProducts } from '@/hooks/useAdminProducts';
+import { useAdminProducts, useDebounce } from '@/hooks';
 
 export const ProductSelectDropdown = ({
   selectedProductIds = [],
@@ -10,6 +10,7 @@ export const ProductSelectDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const dropdownRef = useRef(null);
 
   const { products: apiProducts, isLoading: hookIsLoading } = useAdminProducts({ pageSize: 100 });
@@ -60,11 +61,15 @@ export const ProductSelectDropdown = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredProducts = catalog.filter((p) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-  });
+  const filteredProducts = useMemo(() => {
+    if (!debouncedSearch.trim()) return catalog;
+    const q = debouncedSearch.toLowerCase();
+    return catalog.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+    );
+  }, [catalog, debouncedSearch]);
 
   return (
     <div className="relative inline-block" ref={dropdownRef}>

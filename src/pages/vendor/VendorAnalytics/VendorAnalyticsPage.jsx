@@ -138,7 +138,6 @@ export const VendorAnalyticsPage = () => {
       const res = await fetch(exportUrl, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'ngrok-skip-browser-warning': 'true',
         },
       });
 

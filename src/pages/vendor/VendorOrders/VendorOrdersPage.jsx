@@ -5,7 +5,7 @@ import OrdersFilterBar from '@/components/vendor/orders/OrdersFilterBar';
 import OrdersTable from '@/components/vendor/orders/OrdersTable';
 import AcceptOrderModal from '@/components/vendor/orders/AcceptOrderModal';
 import RejectOrderModal from '@/components/vendor/orders/RejectOrderModal';
-import { useAdminOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks';
+import { useAdminOrders, useUpdateOrderStatus, useCancelOrder, useDebounce } from '@/hooks';
 
 const normalizeStatus = (rawStatus, deliveryType) => {
   if (!rawStatus) return 'New Order';
@@ -49,6 +49,7 @@ const getCustomerPhone = (cust) => {
 export const VendorOrdersPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [dateRange, setDateRange] = useState('Date Range');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
@@ -59,9 +60,9 @@ export const VendorOrdersPage = () => {
   const apiFilters = useMemo(() => {
     const f = { page: currentPage, pageSize };
     if (activeTab !== 'all') f.tab = activeTab;
-    if (searchQuery.trim()) f.q = searchQuery.trim();
+    if (debouncedSearchQuery.trim()) f.q = debouncedSearchQuery.trim();
     return f;
-  }, [activeTab, searchQuery, currentPage, pageSize]);
+  }, [activeTab, debouncedSearchQuery, currentPage, pageSize]);
 
   const {
     orders: apiOrders,

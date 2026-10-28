@@ -14,9 +14,6 @@ const axiosInstance = axios.create({
   baseURL,
   timeout: 30000,
   withCredentials: true, // Enables automatic HttpOnly cookie transmission
-  headers: {
-    'ngrok-skip-browser-warning': 'true',
-  },
 });
 
 axiosInstance.interceptors.request.use(
@@ -81,7 +78,6 @@ export const refreshAccessToken = async () => {
           data: refreshToken ? { refreshToken } : {},
           headers: {
             'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
           },
         });
 
